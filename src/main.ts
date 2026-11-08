@@ -6,6 +6,7 @@ import racas from './racas.json';
 import elanData from './elan.json';
 import magia from './magia.json';
 import equip from './equip.json';
+import legado from './legacy.json';
 const SKS = habs as { id: string; nome: string; g: string; a: string }[];
 
 const BONUS = [0, -30, -20, -10, -5, 0, 5, 5, 10, 10, 15, 20, 20, 25, 25, 30, 35, 35, 40, 40, 45];
@@ -166,8 +167,8 @@ const step = (act: string, k: string, v: string | number, d = 1) =>
   `<div class="flex items-center gap-2"><button data-act="${act}" data-k="${k}" data-d="-${d}" class="${BT}">−</button><span class="w-12 text-center font-mono">${v}</span><button data-act="${act}" data-k="${k}" data-d="${d}" class="${BT}">+</button></div>`;
 const row = (label: string, right: string, hint = '') =>
   `<div class="flex items-center justify-between gap-3 border-b border-slate-800/60 py-2 last:border-0"><div class="min-w-0"><div class="truncate sm:whitespace-normal">${label}</div>${hint ? `<div class="text-xs text-slate-500">${hint}</div>` : ''}</div><div class="flex shrink-0 items-center gap-3">${right}</div></div>`;
-const card = (t: string, body: string) => `<section class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20"><h2 class="mb-2 border-b border-amber-500/20 pb-1 font-serif text-lg tracking-wide text-amber-400">${t}</h2>${body}</section>`;
-const chip = (l: string, v: string | number, bad = false, cor = 'text-amber-300') => `<div class="min-w-[4.6rem] shrink-0 snap-start rounded-lg bg-slate-900 px-3 py-1 text-center ring-1 ${bad ? 'ring-red-500/70' : 'ring-slate-700'}"><div class="text-[10px] uppercase tracking-widest text-slate-500">${l}</div><div class="font-mono text-base ${bad ? 'text-red-400' : cor}">${v}</div></div>`;
+const card = (t: string, body: string) => `<section class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20"><h2 class="mb-2 border-b-2 border-amber-500/40 pb-1 font-serif text-base font-bold uppercase tracking-widest text-amber-400">${t}</h2>${body}</section>`;
+const chip = (l: string, v: string | number, bad = false, cor = 'text-amber-300') => `<div class="min-w-[4.8rem] shrink-0 snap-start rounded-lg border-b-2 border-amber-500/70 bg-slate-900 px-3 py-1 text-center ring-1 ${bad ? 'ring-red-500/70' : 'ring-slate-700'}"><div class="text-[10px] uppercase tracking-widest text-slate-500">${l}</div><div class="font-mono text-lg font-bold ${bad ? 'text-red-400' : cor}">${v}</div></div>`;
 
 function painel(): string {
   if (tab === 'atr') return card('Atributos', ATTRS.map(([k, n]) => row(n, step('at', k, s.at[k]) + (A(k) !== s.at[k] ? `<span class="w-10 text-right font-mono text-emerald-400">${A(k)}</span>` : ''), `bônus ${bonus(A(k)) >= 0 ? '+' : ''}${bonus(A(k))}${A(k) !== s.at[k] ? ' (com vantagens)' : ''}`)).join('')) +
@@ -272,7 +273,7 @@ function render() {
       <div class="space-y-2 sm:flex sm:items-center sm:gap-2 sm:space-y-0">
       <div class="flex items-center gap-2 sm:contents">
         <input data-f="nome" value="${s.nome.replace(/"/g, '&quot;')}" placeholder="Nome do personagem" class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 font-serif sm:order-1 text-lg text-amber-300 outline-none ring-1 ring-slate-700 focus:ring-amber-500">
-        <div class="flex gap-1 sm:order-4">${[['export', '⇩', 'Exportar'], ['import', '⇧', 'Importar'], ['reset', '↺', 'Novo']].map(([a, ic, n]) => `<button data-act="${a}" title="${n}" aria-label="${n}" class="h-9 rounded bg-slate-800 px-2.5 text-sm hover:bg-slate-700">${ic}<span class="ml-1 hidden lg:inline">${n}</span></button>`).join('')}</div>
+        <div class="flex gap-1 sm:order-4">${[['tema', document.documentElement.classList.contains('light') ? '☾' : '☀', 'Tema claro/escuro'], ['export', '⇩', 'Exportar'], ['import', '⇧', 'Importar'], ['reset', '↺', 'Novo']].map(([a, ic, n]) => `<button data-act="${a}" title="${n}" aria-label="${n}" class="h-9 rounded bg-slate-800 px-2.5 text-sm hover:bg-slate-700">${ic}<span class="ml-1 hidden lg:inline">${n}</span></button>`).join('')}</div>
       </div>
       <div class="flex items-center gap-2 sm:contents">
         <select data-f="classe" class="min-w-0 flex-1 rounded bg-slate-900 px-2 py-1.5 text-sm ring-1 ring-slate-700 sm:order-2 sm:flex-none">${classes.map(c => `<option value="${c.id}" ${c.id === s.classe ? 'selected' : ''}>${c.nome}</option>`).join('')}</select>
@@ -288,6 +289,56 @@ function render() {
   document.querySelector('nav .bg-amber-500')?.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 
+const ESP: Record<string, string> = { 'Habilidad de Ataque': 'atk', 'Habilidad de Parada': 'par', 'Habilidad de Esquiva': 'esq', 'Llevar Armadura': 'arm', 'Proyección Mágica': 'mag', 'Proyección Psíquica': 'psi', Zeon: 'zeon', ACT: 'act', HB_REGENERACION_ZEONICA: 'reg', HB_NIVEL_DE_VIA: 'via', Convocar: 'conv', Dominar: 'dom', Atar: 'ata', Desconvocar: 'des' };
+for (const [k, n] of [['Agilidad', 'agi'], ['Constitución', 'con'], ['Destreza', 'des'], ['Fuerza', 'for'], ['Poder', 'pod'], ['Voluntad', 'von']]) { ESP['Ki ' + k] = 'ki_' + n; ESP['Acumulación Ki ' + k] = 'acu_' + n; }
+const ATK: Record<string, string> = { AGI: 'agi', CON: 'con', DES: 'des', FUE: 'for', INT: 'int', PER: 'per', POD: 'pod', VOL: 'von' };
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function importarAntigo(o: any): string[] {
+  const av: string[] = [], n = novo(), L = legado as Record<string, Record<string, string>>;
+  const cl = classes.find(c => (c as { cat?: string }).cat === o.categoria);
+  if (cl) n.classe = cl.id; else av.push(`Classe não reconhecida (${o.categoria}); usei ${C().nome}.`);
+  n.nome = o.nombre || ''; n.nivel = clamp(Number(o.nivel) || 1, 1, 30); n.sexo = o.sexo === 'Mujer' ? 'm' : 'h';
+  if (racas.some(r => r.id === o.raza)) n.raca = o.raza; else av.push(`Raça não reconhecida (${o.raza}).`);
+  for (const x of [...(o.ventajas ?? []), ...(o.desventajas ?? [])]) {
+    if (x.origen !== 'ORIGEN_PC') continue;
+    const v = vantagens.find(y => y.id === x.ventaja);
+    if (!v) { av.push(`Vantagem/desvantagem não encontrada: ${x.ventaja}.`); continue; }
+    const c = v.custos.includes(x.pc) ? x.pc : v.custos.includes(-x.pc) ? -x.pc : v.custos[0];
+    const op = v.lista === 'LISTA_CARACTERISTICAS' ? ATK[x.opcion] : v.lista === 'LISTA_HABILIDADES_SECUNDARIAS' ? L.sk[x.opcion] : v.lista === 'LISTA_TIPOS_SECUNDARIAS' ? L.tipos[x.opcion] : undefined;
+    if (v.lista && !op) av.push(`Opção não reconhecida em "${v.nome}" (${x.opcion}).`);
+    n.vent.push(op ? { id: v.id, c, o: op } : { id: v.id, c });
+  }
+  s = n;
+  ATTRS.forEach(([k], i) => {
+    const d = n.vent.reduce((a, x) => a + (x.o === k ? (ef(x) === 'sumarUnoAUnaCaracteristica' ? 1 : ef(x) === 'restarDosAUnaCaracteristica' ? -2 : 0) : 0), 0);
+    n.at[k] = clamp((o.caracteristicas?.[i] ?? 5) - rAt(k) - d, 1, 20);
+  });
+  for (const h of o.allHabilidades ?? []) {
+    const k = ESP[h.habilidad] ?? L.sk[h.habilidad], pd = Number(h.PDinvertidos) || 0;
+    const st = ['act', 'reg', 'via'].includes(k) || k?.startsWith('ki_') || k?.startsWith('acu_') ? 1 : 5;
+    if (k && pd && preco(k) > 0) n.pts[k] = Math.round(pd / preco(k) / st) * st;
+  }
+  const vm = o['Múltiplos de vida']?.PDinvertidos; if (vm && K().vidaMult) n.vida = Math.round(vm / K().vidaMult);
+  for (const b of o.bonificadoresNaturales ?? []) for (const f of ['fisico', 'mental', 'extra']) { const id = L.sk[b?.[f]]; if (id) n.nat[id] = (n.nat[id] || 0) + 1; }
+  for (const e of o.elan ?? []) {
+    const g = elanData.find(x => x.id === e.nombre);
+    if (!g) { av.push(`Elan não reconhecido: ${e.nombre}.`); continue; }
+    n.elan[g.nome] = Number(e.sincronizacion) || 0;
+    for (const d of e.dones ?? []) { const id = typeof d === 'string' ? d : d.nombre; if (g.dons.some(x => x.id === id)) n.dons.push(id); else av.push(`Dom de Elan não reconhecido: ${id}.`); }
+  }
+  for (const v of o.viasMagia ?? []) {
+    const id = L.vias[v.via] ?? v.via;
+    if (magia.vias.some(x => x.id === id)) n.vias.push({ id, n: Number(v.nivel) || 0 }); else av.push(`Via não reconhecida: ${v.via}.`);
+    if (v.conjurosLibres?.length) av.push('Os feitiços livres escolhidos não foram importados; escolha de novo na aba Vias.');
+  }
+  const add = (t: string, lista: any[], campo: string, vest = false) => { for (const x of lista ?? []) { const id = x[campo]; if (catalogo(t).some(i => i.id === id)) n.eq.push({ t, id, ...(vest && x.equipado ? { w: true } : {}) }); else av.push(`Item não encontrado: ${id}.`); } };
+  add('a', o.armas, 'arma'); add('r', o.armaduras, 'armadura', true); add('e', o.equipoComprado, 'equipoComprado');
+  const rest = ((o.dinero?.oro || 0) * 100) + ((o.dinero?.plata || 0) * 10) + (o.dinero?.cobre || 0), tot = rest + n.eq.reduce((a, x) => a + cobre(itemDe(x).p), 0);
+  n.ouro = [Math.floor(tot / 100), Math.floor((tot % 100) / 10), tot % 10];
+  for (const k of ['tecnicasKi', 'artesMarciales', 'disciplinasPsiquicas', 'arsMagnus', 'conjurosSueltos', 'esferasMetamagicas']) if (o[k]?.length) av.push(`Não importado (ainda não existe no novo sistema): ${k}.`);
+  s = n;
+  return av;
+}
 const save = () => localStorage.setItem(KEY, JSON.stringify(s));
 const app = document.getElementById('app')!;
 app.addEventListener('click', e => {
@@ -334,6 +385,7 @@ app.addEventListener('click', e => {
     const so = app.querySelector<HTMLSelectElement>(`select[data-vo="${k}"]`);
     s.vent.push(so ? { id: k, c, o: so.value } : { id: k, c });
   }
+  else if (act === 'tema') { const l = document.documentElement.classList.toggle('light'); localStorage.setItem('anima-tema', l ? 'light' : 'dark'); }
   else if (act === 'reset') { if (!confirm('Começar um personagem novo?')) return; s = novo(); }
   else if (act === 'import') { document.getElementById('imp')!.click(); return; }
   else if (act === 'export') {
@@ -369,6 +421,10 @@ app.addEventListener('toggle', e => {
 document.getElementById('imp')!.addEventListener('change', async e => {
   const f = (e.target as HTMLInputElement).files?.[0];
   if (!f) return;
-  try { s = { ...novo(), ...JSON.parse(await f.text()) }; save(); render(); } catch { alert('Arquivo inválido.'); }
+  try {
+    const j = JSON.parse(await f.text());
+    if (j && j.allHabilidades) { const av = importarAntigo(j); save(); render(); alert('Personagem do sistema antigo importado.' + (av.length ? '\n\nAvisos:\n- ' + [...new Set(av)].join('\n- ') : '')); }
+    else { s = { ...novo(), ...j }; save(); render(); }
+  } catch { alert('Arquivo inválido.'); }
 });
 render();

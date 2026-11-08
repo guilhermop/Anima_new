@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+/* Tema claro: troca as variáveis de cor do Tailwind (inspirado na ficha do D&D Beyond) */
+html.light {
+  color-scheme: light;
+  --color-slate-950: #f3f0e8;
+  --color-slate-900: #ffffff;
+  --color-slate-800: #e8e3d6;
+  --color-slate-700: #cdc6b4;
+  --color-slate-600: #a39c8a;
+  --color-slate-500: #6b665a;
+  --color-slate-400: #4d493f;
+  --color-slate-300: #38342c;
+  --color-slate-200: #24211b;
+  --color-amber-200: #8f1d1d;
+  --color-amber-300: #b42318;
+  --color-amber-400: #c53131;
+  --color-amber-500: #c53131;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #047857;
+  --color-emerald-900: #d1fae5;
+  --color-rose-300: #be123c;
+  --color-rose-300: #be123c;
+  --color-rose-900: #ffe4e6;
+  --color-sky-300: #0369a1;
+  --color-violet-300: #6d28d9;
+  --color-red-400: #b91c1c;
+  --color-amber-900: #fde68a;
+}
+html.light body { background-image: radial-gradient(ellipse at top, rgba(197, 49, 49, 0.07), transparent 55%); }
+html.light header { background-color: rgba(255, 255, 255, 0.92); border-bottom-color: #c53131; }
