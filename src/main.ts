@@ -11,22 +11,23 @@ const SKS = habs as { id: string; nome: string; g: string; a: string }[];
 
 const BONUS = [0, -30, -20, -10, -5, 0, 5, 5, 10, 10, 15, 20, 20, 25, 25, 30, 35, 35, 40, 40, 45];
 const bonus = (v: number) => BONUS[Math.min(20, Math.max(1, v))];
-const ATTRS: [string, string][] = [['agi', 'Agilidade'], ['con', 'Constituição'], ['des', 'Destreza'], ['for', 'Força'], ['int', 'Inteligência'], ['per', 'Percepção'], ['pod', 'Poder'], ['von', 'Vontade']];
-const COMBATE: [string, string, string][] = [['atk', 'Ataque', 'des'], ['par', 'Parada', 'des'], ['esq', 'Esquiva', 'agi'], ['arm', 'Armadura', 'for']];
-const SOBRE: [string, string][] = [['psi', 'Projeção Psíquica']];
+const ATTRS: [string, string][] = [['agi', 'Agility'], ['con', 'Constitution'], ['des', 'Dexterity'], ['for', 'Strength'], ['int', 'Intelligence'], ['per', 'Perception'], ['pod', 'Power'], ['von', 'Willpower']];
+const COMBATE: [string, string, string][] = [['atk', 'Attack', 'des'], ['par', 'Block', 'des'], ['esq', 'Dodge', 'agi'], ['arm', 'Wear Armor', 'for']];
+const SOBRE: [string, string][] = [['psi', 'Psychic Projection']];
 const ZEON = [5, 20, 40, 55, 70, 85, 95, 110, 120, 135, 150, 160, 175, 185, 200, 215, 225, 240, 250, 265];
 const zeonBase = (v: number) => ZEON[clampN(v) - 1];
 const actBase = (v: number) => (v <= 4 ? 0 : v <= 7 ? 5 : v <= 11 ? 10 : v <= 14 ? 15 : v === 15 ? 20 : v <= 17 ? 25 : v <= 19 ? 30 : 35);
+const ABR = (k: string) => ({ agi: 'AGI', con: 'CON', des: 'DEX', for: 'STR', int: 'INT', per: 'PER', pod: 'POW', von: 'WIL' } as Record<string, string>)[k] ?? k.toUpperCase();
 const clampN = (v: number) => Math.min(20, Math.max(1, v));
-// [chave, nome, passo, atributo de bônus]
-const MAG: [string, string, number, string][] = [['zeon', 'Zeon', 5, ''], ['act', 'ACT (Acúmulo de Zeon)', 1, ''], ['reg', 'Regeneração zeônica', 1, ''], ['via', 'Nível de Via', 1, ''], ['mag', 'Projeção Mágica', 5, 'des'], ['conv', 'Convocar', 5, 'pod'], ['dom', 'Dominar', 5, 'von'], ['ata', 'Atar', 5, 'pod'], ['des', 'Desconvocar', 5, 'von']];
+// [key, name, step, bonus attribute]
+const MAG: [string, string, number, string][] = [['zeon', 'Zeon', 5, ''], ['act', 'ACT (Zeon Accumulation)', 1, ''], ['reg', 'Zeon Regeneration', 1, ''], ['via', 'Magic Level', 1, ''], ['mag', 'Magic Projection', 5, 'des'], ['conv', 'Summon', 5, 'pod'], ['dom', 'Dominate', 5, 'von'], ['ata', 'Bind', 5, 'pod'], ['des', 'Banish', 5, 'von']];
 const MAGK = MAG.map(m => m[0]);
-const SEC: [string, string][] = [['atl', 'Atléticas'], ['soc', 'Sociais'], ['per', 'Perceptivas'], ['int', 'Intelectuais'], ['vig', 'Vigor'], ['sub', 'Subterfúgio'], ['cre', 'Criativas']];
+const SEC: [string, string][] = [['atl', 'Athletic'], ['soc', 'Social'], ['per', 'Perceptive'], ['int', 'Intellectual'], ['vig', 'Vigor'], ['sub', 'Subterfuge'], ['cre', 'Creative']];
 const DEUSES: Record<string, string[]> = { Beryl: ['Azrael', 'Barakiel', 'Edamiel', 'Gabriel', 'Rafael', 'Mikael', 'Uriel'], Shajad: ['Abbadon', 'Erebus', 'Eriol', 'Meseguis', 'Jedah', 'Noah', 'Zemial'] };
 const KIA = ATTRS.filter(([k]) => ['agi', 'con', 'des', 'for', 'pod', 'von'].includes(k));
 const kiBase = (v: number) => (v <= 10 ? v : 10 + 2 * (v - 10));
 const acuBase = (v: number) => (v <= 9 ? 1 : v <= 12 ? 2 : v <= 15 ? 3 : 4);
-const TABS: [string, string][] = [['atr', 'Atributos'], ['raca', 'Raça'], ['cmb', 'Combate'], ['ki', 'Ki'], ['mag', 'Magia'], ['via', 'Vias'], ['sob', 'Psíquico'], ['vant', 'Vantagens'], ['eq', 'Equipamento'], ['sec', 'Secundárias'], ['elan', 'Elan']];
+const TABS: [string, string][] = [['atr', 'Attributes'], ['raca', 'Race'], ['cmb', 'Combat'], ['ki', 'Ki'], ['mag', 'Magic'], ['via', 'Paths'], ['sob', 'Psychic'], ['vant', 'Advantages'], ['eq', 'Equipment'], ['sec', 'Secondary'], ['elan', 'Elan']];
 
 interface Vent { id: string; c: number; o?: string }
 interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[] }
@@ -50,10 +51,10 @@ function pcs(l: Vent[]) {
 }
 function motivo(v: V, c: number): string {
   const l = [...s.vent, { id: v.id, c }], tem = (id: string) => s.vent.some(x => x.id === id);
-  if (v.rep === 'no' && tem(v.id)) return 'Já adquirida';
-  if (v.inc.some(tem) || s.vent.some(x => vById(x.id).inc.includes(v.id))) return 'Incompatível com algo já escolhido';
-  if (v.dis && s.vent.filter(x => vById(x.id).dis).length >= 3) return 'Máximo de 3 desvantagens';
-  if (!v.dis && pcs(l).g < 0) return 'PC insuficientes';
+  if (v.rep === 'no' && tem(v.id)) return 'Already acquired';
+  if (v.inc.some(tem) || s.vent.some(x => vById(x.id).inc.includes(v.id))) return 'Incompatible with something already chosen';
+  if (v.dis && s.vent.filter(x => vById(x.id).dis).length >= 3) return 'Maximum of 3 disadvantages';
+  if (!v.dis && pcs(l).g < 0) return 'Not enough CP';
   return '';
 }
 
@@ -95,7 +96,7 @@ const A = (k: string) => {
   }
   return clampN(v);
 };
-const REST: [string, string, string][] = [['RF', 'Física', 'con'], ['RE', 'Doenças', 'con'], ['RV', 'Venenos', 'con'], ['RM', 'Mágica', 'pod'], ['RP', 'Psíquica', 'von']];
+const REST: [string, string, string][] = [['RF', 'Physical', 'con'], ['RE', 'Disease', 'con'], ['RV', 'Poison', 'con'], ['RM', 'Magic', 'pod'], ['RP', 'Psychic', 'von']];
 const EXC: Record<string, string[]> = { resistenciaFisicaExcepcional: ['RF', 'RE', 'RV'], resistenciaMagicaExcepcional: ['RM'], resistenciaPsiquicaExcepcional: ['RP'] };
 const HALF: Record<string, string> = { saludEnfermiza: 'RE', vulnerabilidadMagia: 'RM', debilidadFisica: 'RF', vulnerabilidadVenenos: 'RV' };
 const REGEN = [0, 0, 1, 1, 1, 1, 1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12];
@@ -115,9 +116,9 @@ type ED = EG['dons'][number];
 const elSpent = (g: EG) => g.dons.filter(d => s.dons.includes(d.id)).reduce((a, d) => a + d.c, 0);
 const elMotivo = (g: EG, d: ED) => {
   const sync = s.elan[g.nome] || 0, falta = d.req.find(r => !s.dons.includes(r));
-  if (sync < d.min) return `Requer sincronização ${d.min}`;
-  if (sync - elSpent(g) < d.c) return 'Sincronização livre insuficiente';
-  return falta ? 'Requer: ' + (g.dons.find(x => x.id === falta)?.nome ?? falta) : '';
+  if (sync < d.min) return `Requires synchronization ${d.min}`;
+  if (sync - elSpent(g) < d.c) return 'Not enough free synchronization';
+  return falta ? 'Requires: ' + (g.dons.find(x => x.id === falta)?.nome ?? falta) : '';
 };
 const rmDon = (id: string) => {
   s.dons = s.dons.filter(x => x !== id);
@@ -140,10 +141,10 @@ const catalogo = (t: string) => (t === 'a' ? equip.armas : t === 'r' ? equip.arm
 const itemDe = (x: { t: string; id: string }) => catalogo(x.t).find(i => i.id === x.id)!;
 const cobre = (p: number[]) => p[0] * 100 + p[1] * 10 + p[2];
 const saldo = () => cobre(s.ouro) - s.eq.reduce((a, x) => a + cobre(itemDe(x).p), 0);
-const fmt = (c: number) => `${c < 0 ? '-' : ''}${Math.floor(Math.abs(c) / 100)}o ${Math.floor((Math.abs(c) % 100) / 10)}p ${Math.abs(c) % 10}c`;
-const TIPOS = ['Corte', 'Impacto', 'Perfuração', 'Calor', 'Eletricidade', 'Frio', 'Energia'];
-const GRUPOS_EQ: Record<string, string> = { animales: 'Animais', calzado: 'Calçados', decoracion: 'Decoração', embarcaciones: 'Embarcações', orfebreria: 'Ourivesaria', raciones: 'Rações', transporte: 'Transporte', varios: 'Diversos', venenos: 'Venenos', vestimenta: 'Vestimenta', vivienda: 'Moradia' };
-const infoEq = (t: string, i: Item) => (t === 'a' ? `dano ${i.dm}${i.b ? ` +${bonus(A(i.b))}` : ''}, turno ${i.v >= 0 ? '+' : ''}${i.v}, FOR ${i.fu}${i.f2 ? '/' + i.f2 : ''}, crítico ${i.k.filter(Boolean).join('/')}${i.e.length ? ', ' + i.e.join(', ') : ''}` : t === 'r' ? `${i.l}, ${i.cl}, TA ${i.ta.join('/')}, exige armadura ${i.rq}` : i.w ? `${i.w} kg` : '');
+const fmt = (c: number) => `${c < 0 ? '-' : ''}${Math.floor(Math.abs(c) / 100)}g ${Math.floor((Math.abs(c) % 100) / 10)}s ${Math.abs(c) % 10}c`;
+const TIPOS = ['Cut', 'Impact', 'Thrust', 'Heat', 'Electricity', 'Cold', 'Energy'];
+const GRUPOS_EQ: Record<string, string> = { animales: 'Animals', calzado: 'Footwear', decoracion: 'Decoration', embarcaciones: 'Boats', orfebreria: 'Goldsmithing', raciones: 'Rations', transporte: 'Transport', varios: 'Miscellaneous', venenos: 'Poisons', vestimenta: 'Clothing', vivienda: 'Housing' };
+const infoEq = (t: string, i: Item) => (t === 'a' ? `damage ${i.dm}${i.b ? ` +${bonus(A(i.b))}` : ''}, speed ${i.v >= 0 ? '+' : ''}${i.v}, STR ${i.fu}${i.f2 ? '/' + i.f2 : ''}, critical ${i.k.filter(Boolean).join('/')}${i.e.length ? ', ' + i.e.join(', ') : ''}` : t === 'r' ? `${i.l}, ${i.cl}, TA ${i.ta.join('/')}, requires armor ${i.rq}` : i.w ? `${i.w} kg` : '');
 const skById = (id: string) => SKS.find(h => h.id === id)!;
 const SKN: Record<string, string> = Object.fromEntries(SKS.map(h => [h.id, h.nome]));
 const CATN: Record<string, string> = Object.fromEntries(SEC);
@@ -171,27 +172,27 @@ const card = (t: string, body: string) => `<section class="rounded-xl border bor
 const chip = (l: string, v: string | number, bad = false, cor = 'text-amber-300') => `<div class="min-w-[4.8rem] shrink-0 snap-start rounded-lg border-b-2 border-amber-500/70 bg-slate-900 px-3 py-1 text-center ring-1 ${bad ? 'ring-red-500/70' : 'ring-slate-700'}"><div class="text-[10px] uppercase tracking-widest text-slate-500">${l}</div><div class="font-mono text-lg font-bold ${bad ? 'text-red-400' : cor}">${v}</div></div>`;
 
 function painel(): string {
-  if (tab === 'atr') return card('Atributos', ATTRS.map(([k, n]) => row(n, step('at', k, s.at[k]) + (A(k) !== s.at[k] ? `<span class="w-10 text-right font-mono text-emerald-400">${A(k)}</span>` : ''), `bônus ${bonus(A(k)) >= 0 ? '+' : ''}${bonus(A(k))}${A(k) !== s.at[k] ? ' (com vantagens)' : ''}`)).join('')) +
-    card('Resistências e regeneração', REST.map(([r, n, a]) => row(n, `<span class="font-mono text-amber-300">${resist(r, a)}</span>`, `presença ${30 + 5 * (s.nivel - 1)} + bônus de ${a.toUpperCase()}${s.vent.some(x => HALF[vById(x.id).ef] === r) ? ', pela metade' : ''}`)).join('') + row('Regeneração', `<span class="font-mono text-amber-300">${regen()}</span>`, 'base de CON + vantagens'));
+  if (tab === 'atr') return card('Attributes', ATTRS.map(([k, n]) => row(n, step('at', k, s.at[k]) + (A(k) !== s.at[k] ? `<span class="w-10 text-right font-mono text-emerald-400">${A(k)}</span>` : ''), `bonus ${bonus(A(k)) >= 0 ? '+' : ''}${bonus(A(k))}${A(k) !== s.at[k] ? ' (with advantages)' : ''}`)).join('')) +
+    card('Resistances and regeneration', REST.map(([r, n, a]) => row(n, `<span class="font-mono text-amber-300">${resist(r, a)}</span>`, `presence ${30 + 5 * (s.nivel - 1)} + ${ABR(a)} bonus${s.vent.some(x => HALF[vById(x.id).ef] === r) ? ', halved' : ''}`)).join('') + row('Regeneration', `<span class="font-mono text-amber-300">${regen()}</span>`, 'CON base + advantages'));
   if (tab === 'cmb') {
     const g = gasto(CMBK);
-    return card('Habilidades de combate', COMBATE.map(([k, n, a]) => row(n, step('pt', k, s.pts[k] || 0, 5) + `<div class="w-16 text-right font-mono text-amber-300">${final(k, a)}</div>`, `${K()[k]} PD por ponto, base ${a.toUpperCase()}`)).join('') +
-      `<p class="mt-3 text-sm ${g > limCmb() ? 'text-red-400' : 'text-slate-400'}">Combate: ${g}/${limCmb()} PD (limite da classe, inclui Ki)</p>`) +
-      card('Vida', row('Múltiplos de vida', step('vida', '', s.vida), `${K().vidaMult} PD cada, soma CON por múltiplo`));
+    return card('Combat abilities', COMBATE.map(([k, n, a]) => row(n, step('pt', k, s.pts[k] || 0, 5) + `<div class="w-16 text-right font-mono text-amber-300">${final(k, a)}</div>`, `${K()[k]} DP per point, base ${ABR(a)}`)).join('') +
+      `<p class="mt-3 text-sm ${g > limCmb() ? 'text-red-400' : 'text-slate-400'}">Combat: ${g}/${limCmb()} DP (class limit, includes Ki)</p>`) +
+      card('Life', row('Life multiples', step('vida', '', s.vida), `${K().vidaMult} DP each, adds CON per multiple`));
   }
   if (tab === 'ki') return card('Ki', KIA.map(([k, n]) => row(n,
-      `<div class="flex items-center gap-4"><div class="text-center"><div class="text-[10px] text-slate-500">Ki</div>${step('pt', 'ki_' + k, kiBase(A(k)) + (s.pts['ki_' + k] || 0))}</div><div class="text-center"><div class="text-[10px] text-slate-500">Acumulação</div>${step('pt', 'acu_' + k, acuBase(A(k)) + (s.pts['acu_' + k] || 0))}</div></div>`,
-      `base ${kiBase(A(k))} Ki e ${acuBase(A(k))} acum.; ${K().ki} PD por Ki, ${K().acum} PD por acum.`)).join('') +
-      `<p class="mt-3 text-sm text-slate-400">Total: ${kiTotal()} Ki, ${acuTotal()} de acumulação. Entra no limite de combate.</p>`);
+      `<div class="flex items-center gap-4"><div class="text-center"><div class="text-[10px] text-slate-500">Ki</div>${step('pt', 'ki_' + k, kiBase(A(k)) + (s.pts['ki_' + k] || 0))}</div><div class="text-center"><div class="text-[10px] text-slate-500">Accumulation</div>${step('pt', 'acu_' + k, acuBase(A(k)) + (s.pts['acu_' + k] || 0))}</div></div>`,
+      `base ${kiBase(A(k))} Ki and ${acuBase(A(k))} accum.; ${K().ki} DP per Ki, ${K().acum} DP per accum.`)).join('') +
+      `<p class="mt-3 text-sm text-slate-400">Total: ${kiTotal()} Ki, ${acuTotal()} of accumulation. Counts toward the combat limit.</p>`);
   if (tab === 'raca') {
     const r = RZ();
     const tr = (r?.tr ?? []).map(x => {
       const aplica = Object.keys(x.at).length || Object.keys(x.res).length || x.reg;
-      const badge = aplica ? '<span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">na ficha</span>' : x.obs ? '<span class="rounded bg-amber-900/60 px-1.5 text-[10px] text-amber-300">manual</span>' : '';
+      const badge = aplica ? '<span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">on sheet</span>' : x.obs ? '<span class="rounded bg-amber-900/60 px-1.5 text-[10px] text-amber-300">manual</span>' : '';
       return `<div class="border-b border-slate-800/70 py-2"><div class="flex items-center justify-between gap-2"><span class="${x.dis ? 'text-rose-300' : ''}">${x.nome}</span>${badge}</div><div class="text-xs text-slate-500">${x.desc}</div></div>`;
     }).join('');
-    return card('Raça', `<div class="flex flex-wrap items-center gap-3"><select data-f="raca" class="rounded bg-slate-900 px-2 py-2 ring-1 ring-slate-700">${racas.map(x => `<option value="${x.id}" ${x.id === s.raca ? 'selected' : ''}>${x.nome}</option>`).join('')}</select>${s.raca === 'RAZA_DUKZARIST' ? `<select data-f="sexo" class="rounded bg-slate-900 px-2 py-2 ring-1 ring-slate-700"><option value="h" ${s.sexo === 'h' ? 'selected' : ''}>Homem</option><option value="m" ${s.sexo === 'm' ? 'selected' : ''}>Mulher</option></select>` : ''}${r && r.mod ? `<span class="text-sm text-slate-400">Modificador de nível (XP): +${r.mod}</span>` : ''}</div>`) +
-      (tr ? card('Características raciais', tr + '<p class="mt-2 text-xs text-slate-500">Atributos, resistências e regeneração entram na ficha. As marcadas como "manual" são narrativas ou dependem de escolhas.</p>') : '');
+    return card('Race', `<div class="flex flex-wrap items-center gap-3"><select data-f="raca" class="rounded bg-slate-900 px-2 py-2 ring-1 ring-slate-700">${racas.map(x => `<option value="${x.id}" ${x.id === s.raca ? 'selected' : ''}>${x.nome}</option>`).join('')}</select>${s.raca === 'RAZA_DUKZARIST' ? `<select data-f="sexo" class="rounded bg-slate-900 px-2 py-2 ring-1 ring-slate-700"><option value="h" ${s.sexo === 'h' ? 'selected' : ''}>Male</option><option value="m" ${s.sexo === 'm' ? 'selected' : ''}>Female</option></select>` : ''}${r && r.mod ? `<span class="text-sm text-slate-400">Level modifier (XP): +${r.mod}</span>` : ''}</div>`) +
+      (tr ? card('Racial traits', tr + '<p class="mt-2 text-xs text-slate-500">Attributes, resistances and regeneration are applied to the sheet. Traits marked "manual" are narrative or depend on choices.</p>') : '');
   }
   if (tab === 'via') {
     const pool = viaPool(), gasto = viaGasto(), livre = pool - gasto, disp = magia.vias.filter(v => !s.vias.some(x => x.id === v.id));
@@ -201,68 +202,68 @@ function painel(): string {
       const slots = v.livres.filter(l => l <= x.n).map(l => {
         const k = `${v.id}:${l}`, lim = (Math.floor(l / 10) + 1) * 10, atual = s.livres[k] || '';
         const ops = magia.libre.filter(c => c.l <= lim && !c.x.includes(v.nome) && (!Object.values(s.livres).includes(c.n) || c.n === atual));
-        return row(`Feitiço livre (nível ${l})`, `<select data-f="livre" data-k="${k}" class="max-w-44 rounded bg-slate-800 px-1 py-1 text-sm"><option value="">-</option>${ops.map(c => `<option value="${c.n}" ${c.n === atual ? 'selected' : ''}>${c.n} (${c.l})</option>`).join('')}</select>`, `até o nível ${lim}`);
+        return row(`Free spell (level ${l})`, `<select data-f="livre" data-k="${k}" class="max-w-44 rounded bg-slate-800 px-1 py-1 text-sm"><option value="">-</option>${ops.map(c => `<option value="${c.n}" ${c.n === atual ? 'selected' : ''}>${c.n} (${c.l})</option>`).join('')}</select>`, `up to level ${lim}`);
       }).join('');
       const feit = v.c.map(c => `<div class="flex justify-between py-0.5 text-sm ${c.l <= x.n ? 'text-amber-200' : 'text-slate-600'}"><span>${c.n}</span><span class="font-mono">${c.l}</span></div>`).join('');
-      return `<details data-g="${key}" class="rounded-lg bg-slate-900/50 px-3" ${open.has(key) ? 'open' : ''}><summary class="flex cursor-pointer items-center justify-between py-2"><span class="text-amber-300">${v.nome}</span><span class="font-mono text-xs text-slate-400">nível ${x.n}, custo ${viaCoste(i)} por nível</span></summary><div class="flex flex-wrap items-center gap-2 pb-2">${BTN('via', v.id, -10, '−10')}${BTN('via', v.id, -2, '−2')}${BTN('via', v.id, 2, '+2')}${BTN('via', v.id, 10, '+10')}<span class="flex-1"></span>${BTN('viadel', String(i), 0, 'Remover via')}</div>${slots}<div class="mt-2 border-t border-slate-800 pt-2">${feit}</div></details>`;
+      return `<details data-g="${key}" class="rounded-lg bg-slate-900/50 px-3" ${open.has(key) ? 'open' : ''}><summary class="flex cursor-pointer items-center justify-between py-2"><span class="text-amber-300">${v.nome}</span><span class="font-mono text-xs text-slate-400">level ${x.n}, cost ${viaCoste(i)} per level</span></summary><div class="flex flex-wrap items-center gap-2 pb-2">${BTN('via', v.id, -10, '−10')}${BTN('via', v.id, -2, '−2')}${BTN('via', v.id, 2, '+2')}${BTN('via', v.id, 10, '+10')}<span class="flex-1"></span>${BTN('viadel', String(i), 0, 'Remove path')}</div>${slots}<div class="mt-2 border-t border-slate-800 pt-2">${feit}</div></details>`;
     }).join('<div class="h-2"></div>');
-    return card('Vias de magia', temDon() ? `<p class="text-sm ${livre < 0 ? 'text-red-400' : 'text-slate-400'}">Níveis de via: ${gasto}/${pool} (livres ${livre}). Máximo de ${NMAX} por via. Via oposta a uma já escolhida custa o dobro, e Necromancy também, se não for a primeira.</p>` : '<p class="text-sm text-amber-300">Para usar vias é preciso da vantagem "The Gift" (aba Vantagens) e de pontos em Nível de Via (aba Magia).</p>') +
-      (disp.length && temDon() ? `<div class="flex gap-2"><select data-vsel class="rounded bg-slate-900 px-2 py-2 ring-1 ring-slate-700">${disp.map(v => `<option value="${v.id}">${v.nome} (oposta: ${v.oppn})</option>`).join('')}</select><button data-act="viaadd" class="rounded bg-amber-500 px-4 py-2 text-slate-950">Adicionar via</button></div>` : '') + `<div class="space-y-1">${lista}</div>`;
+    return card('Magic paths', temDon() ? `<p class="text-sm ${livre < 0 ? 'text-red-400' : 'text-slate-400'}">Path levels: ${gasto}/${pool} (free ${livre}). Maximum of ${NMAX} per path. A path opposite to one you already chose costs double, and so does Necromancy unless it is the first.</p>` : '<p class="text-sm text-amber-300">To use paths you need the "The Gift" advantage (Advantages tab) and points in Magic Level (Magic tab).</p>') +
+      (disp.length && temDon() ? `<div class="flex gap-2"><select data-vsel class="rounded bg-slate-900 px-2 py-2 ring-1 ring-slate-700">${disp.map(v => `<option value="${v.id}">${v.nome} (opposite: ${v.oppn})</option>`).join('')}</select><button data-act="viaadd" class="rounded bg-amber-500 px-4 py-2 text-slate-950">Add path</button></div>` : '') + `<div class="space-y-1">${lista}</div>`;
   }
   if (tab === 'eq') {
     const q = busca.toLowerCase(), mon = s.eq.map((x, i) => ({ x, i, it: itemDe(x) }));
     const vest = mon.filter(m => m.x.t === 'r' && m.x.w).map(m => m.it), ta = TIPOS.map((_, k) => vest.reduce((a, v) => a + (v.ta[k] || 0), 0));
     const armaEf = final('arm', 'for');
-    const dono = mon.map(({ x, i, it }) => row(`${it.n}${x.t === 'r' && x.w ? ' <span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">vestida</span>' : ''}`,
-      `<div class="flex items-center gap-2">${x.t === 'r' ? `<button data-act="ewear" data-k="${i}" class="rounded bg-slate-800 px-2 py-1 text-xs text-amber-300">${x.w ? 'Tirar' : 'Vestir'}</button>` : ''}<button data-act="edel" data-k="${i}" class="${BT}">×</button></div>`,
-      `${infoEq(x.t, it)}${x.t === 'r' && armaEf < it.rq ? ' <span class="text-red-400">(sua Armadura é baixa demais)</span>' : ''}`)).join('');
-    const sub: [string, string][] = [['a', 'Armas'], ['r', 'Armaduras'], ['e', 'Itens']];
+    const dono = mon.map(({ x, i, it }) => row(`${it.n}${x.t === 'r' && x.w ? ' <span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">worn</span>' : ''}`,
+      `<div class="flex items-center gap-2">${x.t === 'r' ? `<button data-act="ewear" data-k="${i}" class="rounded bg-slate-800 px-2 py-1 text-xs text-amber-300">${x.w ? 'Take off' : 'Wear'}</button>` : ''}<button data-act="edel" data-k="${i}" class="${BT}">×</button></div>`,
+      `${infoEq(x.t, it)}${x.t === 'r' && armaEf < it.rq ? ' <span class="text-red-400">(your Wear Armor skill is too low)</span>' : ''}`)).join('');
+    const sub: [string, string][] = [['a', 'Weapons'], ['r', 'Armors'], ['e', 'Items']];
     const cat = catalogo(esub), gname = (i: Item) => (esub === 'a' ? i.c[0] : esub === 'r' ? i.cl : GRUPOS_EQ[i.g] ?? i.g) as string;
     const grupos = [...new Set(cat.map(gname))].sort();
-    const lista = grupos.map(g => `<details data-g="eq:${esub}:${g}" class="rounded-lg bg-slate-900/50 px-3" ${open.has(`eq:${esub}:${g}`) || q ? 'open' : ''}><summary class="cursor-pointer py-2 text-amber-300">${g}</summary>${cat.filter(i => gname(i) === g).map(i => `<div data-n="${i.n.toLowerCase()}" class="flex items-center justify-between gap-3 border-t border-slate-800 py-2 ${q && !i.n.toLowerCase().includes(q) ? 'hidden' : ''}"><div><div class="text-sm">${i.n}</div><div class="text-xs text-slate-500">${fmt(cobre(i.p))}, ${i.w} kg${infoEq(esub, i) ? ', ' + infoEq(esub, i) : ''}</div></div><button data-act="eadd" data-k="${esub}:${i.id}" class="rounded bg-slate-800 px-3 py-1 text-sm text-amber-300 hover:bg-amber-500 hover:text-slate-950">Comprar</button></div>`).join('')}</details>`).join('');
+    const lista = grupos.map(g => `<details data-g="eq:${esub}:${g}" class="rounded-lg bg-slate-900/50 px-3" ${open.has(`eq:${esub}:${g}`) || q ? 'open' : ''}><summary class="cursor-pointer py-2 text-amber-300">${g}</summary>${cat.filter(i => gname(i) === g).map(i => `<div data-n="${i.n.toLowerCase()}" class="flex items-center justify-between gap-3 border-t border-slate-800 py-2 ${q && !i.n.toLowerCase().includes(q) ? 'hidden' : ''}"><div><div class="text-sm">${i.n}</div><div class="text-xs text-slate-500">${fmt(cobre(i.p))}, ${i.w} kg${infoEq(esub, i) ? ', ' + infoEq(esub, i) : ''}</div></div><button data-act="eadd" data-k="${esub}:${i.id}" class="rounded bg-slate-800 px-3 py-1 text-sm text-amber-300 hover:bg-amber-500 hover:text-slate-950">Buy</button></div>`).join('')}</details>`).join('');
     const kg = mon.reduce((a, m) => a + m.it.w, 0);
-    return card('Dinheiro', `<div class="flex flex-wrap items-center gap-3 text-sm">${['ouro', 'prata', 'cobre'].map((n, k) => `<label class="flex items-center gap-1">${n}<input type="number" min="0" data-f="ouro" data-k="${k}" value="${s.ouro[k]}" class="w-20 rounded bg-slate-900 px-2 py-1 text-right ring-1 ring-slate-700"></label>`).join('')}<span class="${saldo() < 0 ? 'text-red-400' : 'text-amber-300'}">Saldo: <b class="font-mono">${fmt(saldo())}</b></span><span class="text-slate-500">1 ouro = 10 pratas = 100 cobres</span></div>`) +
-      card('Seus itens', (dono || '<p class="text-sm text-slate-500">Nada comprado ainda.</p>') + (mon.length ? `<p class="mt-2 text-sm text-slate-400">Peso total: ${Math.round(kg * 10) / 10} kg${vest.length ? `. Proteção vestida: ${TIPOS.map((n, k) => `${n} ${ta[k]}`).join(', ')}. Penalizador natural ${vest.reduce((a, v) => a + v.pn, 0)}, restrição de movimento ${vest.reduce((a, v) => a + v.rm, 0)}.` : ''}</p>` : '')) +
-      `<div class="flex gap-2">${sub.map(([k, n]) => `<button data-act="esub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${esub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}<input data-q value="${busca}" placeholder="Buscar..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500"></div><div class="space-y-2">${lista}</div>`;
+    return card('Money', `<div class="flex flex-wrap items-center gap-3 text-sm">${['gold', 'silver', 'copper'].map((n, k) => `<label class="flex items-center gap-1">${n}<input type="number" min="0" data-f="ouro" data-k="${k}" value="${s.ouro[k]}" class="w-20 rounded bg-slate-900 px-2 py-1 text-right ring-1 ring-slate-700"></label>`).join('')}<span class="${saldo() < 0 ? 'text-red-400' : 'text-amber-300'}">Balance: <b class="font-mono">${fmt(saldo())}</b></span><span class="text-slate-500">1 gold = 10 silver = 100 copper</span></div>`) +
+      card('Your items', (dono || '<p class="text-sm text-slate-500">Nothing bought yet.</p>') + (mon.length ? `<p class="mt-2 text-sm text-slate-400">Total weight: ${Math.round(kg * 10) / 10} kg${vest.length ? `. Worn protection: ${TIPOS.map((n, k) => `${n} ${ta[k]}`).join(', ')}. Natural penalty ${vest.reduce((a, v) => a + v.pn, 0)}, movement restriction ${vest.reduce((a, v) => a + v.rm, 0)}.` : ''}</p>` : '')) +
+      `<div class="flex gap-2">${sub.map(([k, n]) => `<button data-act="esub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${esub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}<input data-q value="${busca}" placeholder="Search..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500"></div><div class="space-y-2">${lista}</div>`;
   }
   if (tab === 'vant') {
     const dis = vsub === 'd', P = pcs(s.vent), q = busca.toLowerCase();
-    const sel = s.vent.map((x, i) => ({ x, i, v: vById(x.id) })).map(({ x, i, v }) => row(v.nome + (x.o ? ` (${ATTRS.find(a => a[0] === x.o)?.[1] ?? SKN[x.o] ?? CATN[x.o]})` : ''), `<div class="flex items-center gap-3"><span class="font-mono ${v.dis ? 'text-emerald-400' : 'text-amber-300'}">${v.dis ? '+' + -x.c : '-' + x.c} PC</span><button data-act="vdel" data-k="${i}" class="${BT}">×</button></div>`, v.gn)).join('');
+    const sel = s.vent.map((x, i) => ({ x, i, v: vById(x.id) })).map(({ x, i, v }) => row(v.nome + (x.o ? ` (${ATTRS.find(a => a[0] === x.o)?.[1] ?? SKN[x.o] ?? CATN[x.o]})` : ''), `<div class="flex items-center gap-3"><span class="font-mono ${v.dis ? 'text-emerald-400' : 'text-amber-300'}">${v.dis ? '+' + -x.c : '-' + x.c} CP</span><button data-act="vdel" data-k="${i}" class="${BT}">×</button></div>`, v.gn)).join('');
     const grupos = [...new Set(vantagens.filter(v => v.dis === dis).map(v => v.gn))].sort();
     const lista = grupos.map(g => `<details data-g="${g}" class="rounded-lg bg-slate-900/50 px-3" ${open.has(g) || q ? 'open' : ''}><summary class="cursor-pointer py-2 text-amber-300">${g}</summary>${vantagens.filter(v => v.dis === dis && v.gn === g).map(v => {
       const c = v.custos[0], m = motivo(v, c);
       const sl = v.custos.length > 1 ? `<select data-vc="${v.id}" class="rounded bg-slate-800 px-1 py-1 text-sm">${v.custos.map(k => `<option>${k}</option>`).join('')}</select>` : `<span class="w-8 text-center font-mono text-sm">${c}</span>`;
-      return `<div data-n="${v.nome.toLowerCase()}" class="flex items-center justify-between gap-3 border-t border-slate-800 py-2 ${q && !v.nome.toLowerCase().includes(q) ? 'hidden' : ''}" title="${v.desc.replace(/"/g, '&quot;')}"><span class="text-sm">${v.nome}${APLICA.has(v.ef) ? ' <span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">na ficha</span>' : ''}</span><div class="flex items-center gap-2">${OPC(v.lista) ? `<select data-vo="${v.id}" class="max-w-40 rounded bg-slate-800 px-1 py-1 text-sm">${OPC(v.lista)!.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>` : ''}${sl}<button data-act="vadd" data-k="${v.id}" class="rounded bg-slate-800 px-3 py-1 text-sm text-amber-300 hover:bg-amber-500 hover:text-slate-950 disabled:opacity-40" ${m ? `disabled title="${m}"` : ''}>Adicionar</button></div></div>`;
+      return `<div data-n="${v.nome.toLowerCase()}" class="flex items-center justify-between gap-3 border-t border-slate-800 py-2 ${q && !v.nome.toLowerCase().includes(q) ? 'hidden' : ''}" title="${v.desc.replace(/"/g, '&quot;')}"><span class="text-sm">${v.nome}${APLICA.has(v.ef) ? ' <span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">on sheet</span>' : ''}</span><div class="flex items-center gap-2">${OPC(v.lista) ? `<select data-vo="${v.id}" class="max-w-40 rounded bg-slate-800 px-1 py-1 text-sm">${OPC(v.lista)!.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>` : ''}${sl}<button data-act="vadd" data-k="${v.id}" class="rounded bg-slate-800 px-3 py-1 text-sm text-amber-300 hover:bg-amber-500 hover:text-slate-950 disabled:opacity-40" ${m ? `disabled title="${m}"` : ''}>Add</button></div></div>`;
     }).join('')}</details>`).join('');
-    return card('Pontos de Criação', `<p class="text-sm text-slate-300">Livres: <b class="font-mono ${P.g < 0 ? 'text-red-400' : 'text-amber-300'}">${P.g}</b>${P.d ? ` | Don: ${P.d}` : ''}${P.p ? ` | Psíquicas: ${P.p}` : ''}${P.t ? ` | Antecedentes: ${P.t}` : ''}. Até 3 desvantagens, cada uma devolve PC.</p>${sel}`) +
-      `<div class="flex gap-2">${[['v', 'Vantagens'], ['d', 'Desvantagens']].map(([k, n]) => `<button data-act="vsub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${vsub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}<input data-q value="${busca}" placeholder="Buscar..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500"></div>` +
+    return card('Creation points', `<p class="text-sm text-slate-300">Free: <b class="font-mono ${P.g < 0 ? 'text-red-400' : 'text-amber-300'}">${P.g}</b>${P.d ? ` | Gift: ${P.d}` : ''}${P.p ? ` | Psychic: ${P.p}` : ''}${P.t ? ` | Background: ${P.t}` : ''}. Up to 3 disadvantages, each gives CP back.</p>${sel}`) +
+      `<div class="flex gap-2">${[['v', 'Advantages'], ['d', 'Disadvantages']].map(([k, n]) => `<button data-act="vsub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${vsub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}<input data-q value="${busca}" placeholder="Search..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500"></div>` +
       `<div class="space-y-2">${lista}</div>`;
   }
   if (tab === 'mag') {
     const lim = Math.floor(K().limSob * total()), g = gasto(MAGK), viaMax = Math.floor(total() / 10);
-    return card('Magia', MAG.map(([k, n, st, a]) => row(n, step('pt', k, s.pts[k] || 0, st) + `<div class="w-16 text-right font-mono text-amber-300">${finalMag(k, a)}</div>`,
-      k === 'zeon' ? `${K().zeon} PD por 5 Zeon, base ${zeonBase(A('pod'))} (Poder)` : k === 'via' ? `1 PD por nível, máximo ${viaMax} PD` : `${preco(k)} PD por ponto`)).join('') +
-      `<p class="mt-3 text-sm ${g > lim || (s.pts.via || 0) > viaMax ? 'text-red-400' : 'text-slate-400'}">Sobrenatural: ${g}/${lim} PD (limite da classe)</p>`);
+    return card('Magic', MAG.map(([k, n, st, a]) => row(n, step('pt', k, s.pts[k] || 0, st) + `<div class="w-16 text-right font-mono text-amber-300">${finalMag(k, a)}</div>`,
+      k === 'zeon' ? `${K().zeon} DP per 5 Zeon, base ${zeonBase(A('pod'))} (Power)` : k === 'via' ? `1 DP per level, maximum ${viaMax} DP` : `${preco(k)} DP per point`)).join('') +
+      `<p class="mt-3 text-sm ${g > lim || (s.pts.via || 0) > viaMax ? 'text-red-400' : 'text-slate-400'}">Supernatural: ${g}/${lim} DP (class limit)</p>`);
   }
-  if (tab === 'sob') return card('Psíquico', SOBRE.map(([k, n]) => row(n, step('pt', k, s.pts[k] || 0, 5), `${K()[k]} PD por ponto`)).join('') +
-      `<p class="mt-3 text-sm ${gasto(['psi']) > Math.floor(K().limPsi * total()) ? 'text-red-400' : 'text-slate-400'}">Psíquico: ${gasto(['psi'])}/${Math.floor(K().limPsi * total())} PD (limite da classe)</p>`);
+  if (tab === 'sob') return card('Psychic', SOBRE.map(([k, n]) => row(n, step('pt', k, s.pts[k] || 0, 5), `${K()[k]} DP per point`)).join('') +
+      `<p class="mt-3 text-sm ${gasto(['psi']) > Math.floor(K().limPsi * total()) ? 'text-red-400' : 'text-slate-400'}">Psychic: ${gasto(['psi'])}/${Math.floor(K().limPsi * total())} DP (class limit)</p>`);
   if (tab === 'sec') {
     const u = natUso();
-    return card('Bônus natural', `<p class="text-sm ${natOk() ? 'text-slate-400' : 'text-red-400'}">${semNat() ? 'Sem bônus natural (desvantagem).' : `Físico ${u.f}/${s.nivel}, mental ${u.m}/${s.nivel}${extraNat() ? `, extra ${u.sobra}/${s.nivel}` : ''}. Cada ponto soma de novo o bônus do atributo da habilidade.`}</p>`) +
-      SEC.map(([g, n]) => card(`${n} <span class="text-sm text-slate-500">${K()[g]} PD por ponto</span>`, SKS.filter(h => h.g === g).map(h => row(h.nome,
+    return card('Natural bonus', `<p class="text-sm ${natOk() ? 'text-slate-400' : 'text-red-400'}">${semNat() ? 'No natural bonus (disadvantage).' : `Physical ${u.f}/${s.nivel}, mental ${u.m}/${s.nivel}${extraNat() ? `, extra ${u.sobra}/${s.nivel}` : ''}. Each point adds the skill's attribute bonus again.`}</p>`) +
+      SEC.map(([g, n]) => card(`${n} <span class="text-sm text-slate-500">${K()[g]} DP per point</span>`, SKS.filter(h => h.g === g).map(h => row(h.nome,
         `<div class="flex items-center gap-3"><div class="text-center"><div class="text-[10px] text-slate-500">pts</div>${step('pt', h.id, s.pts[h.id] || 0, 5)}</div>${semNat() ? '' : `<div class="text-center"><div class="text-[10px] text-slate-500">nat</div>${step('nat', h.id, s.nat[h.id] || 0)}</div>`}<span class="w-12 text-right font-mono text-amber-300">${skFinal(h)}</span></div>`,
-        `${h.a.toUpperCase()} ${bonus(A(h.a)) >= 0 ? '+' : ''}${bonus(A(h.a))}${reducao(h) ? `, custo ${precoSk(h)} PD (reduzido)` : ''}${bonusVant(h) ? `, vantagens +${bonusVant(h)}` : ''}`)).join(''))).join('');
+        `${ABR(h.a)} ${bonus(A(h.a)) >= 0 ? '+' : ''}${bonus(A(h.a))}${reducao(h) ? `, cost ${precoSk(h)} DP (reduced)` : ''}${bonusVant(h) ? `, advantages +${bonusVant(h)}` : ''}`)).join(''))).join('');
   }
   const soma = Object.values(s.elan).reduce((a, b) => a + b, 0);
   const col = (tipo: string) => card(tipo, elanData.filter(g => g.tipo === tipo).map(g => {
     const sync = s.elan[g.nome] || 0, gasto = elSpent(g);
     const dons = g.dons.map(d => {
       const tem = s.dons.includes(d.id), m = tem ? '' : elMotivo(g, d);
-      return `<div class="flex items-center justify-between gap-2 border-t border-slate-800 py-1.5 text-sm"><div><span class="${tem ? 'text-amber-300' : ''}">${d.nome}</span><div class="text-xs text-slate-500">custo ${d.c}, mín. ${d.min}${d.req.length ? `, requer ${d.req.map(r => g.dons.find(x => x.id === r)?.nome ?? r).join(', ')}` : ''}</div></div><button data-act="edon" data-k="${d.id}" class="rounded px-3 py-1 ${tem ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-300 hover:bg-amber-500 hover:text-slate-950'} disabled:opacity-40" ${m ? `disabled title="${m}"` : ''}>${tem ? 'Remover' : 'Adquirir'}</button></div>`;
+      return `<div class="flex items-center justify-between gap-2 border-t border-slate-800 py-1.5 text-sm"><div><span class="${tem ? 'text-amber-300' : ''}">${d.nome}</span><div class="text-xs text-slate-500">cost ${d.c}, min. ${d.min}${d.req.length ? `, requires ${d.req.map(r => g.dons.find(x => x.id === r)?.nome ?? r).join(', ')}` : ''}</div></div><button data-act="edon" data-k="${d.id}" class="rounded px-3 py-1 ${tem ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-300 hover:bg-amber-500 hover:text-slate-950'} disabled:opacity-40" ${m ? `disabled title="${m}"` : ''}>${tem ? 'Remove' : 'Acquire'}</button></div>`;
     }).join('');
-    return `<details data-g="elan:${g.nome}" class="rounded-lg bg-slate-900/50 px-3" ${open.has('elan:' + g.nome) ? 'open' : ''}><summary class="flex cursor-pointer items-center justify-between py-2"><span class="text-amber-300">${g.nome}</span><span class="font-mono text-xs text-slate-400">${sync ? `${sync - gasto}/${sync} livres` : 'sem Elan'}</span></summary>${row('Sincronização', step('elan', g.nome, sync, 5), 'mínimo = o já gasto em dons')}${dons}</details>`;
+    return `<details data-g="elan:${g.nome}" class="rounded-lg bg-slate-900/50 px-3" ${open.has('elan:' + g.nome) ? 'open' : ''}><summary class="flex cursor-pointer items-center justify-between py-2"><span class="text-amber-300">${g.nome}</span><span class="font-mono text-xs text-slate-400">${sync ? `${sync - gasto}/${sync} free` : 'no Elan'}</span></summary>${row('Synchronization', step('elan', g.nome, sync, 5), 'minimum = already spent on gifts')}${dons}</details>`;
   }).join('<div class="h-2"></div>'));
-  return `<div class="grid gap-4 md:grid-cols-2">${col('Beryl')}${col('Shajad')}</div><p class="mt-3 text-sm text-slate-400">Sincronização total: ${soma}. Dons adquiridos: ${s.dons.length}.</p>`;
+  return `<div class="grid gap-4 md:grid-cols-2">${col('Beryl')}${col('Shajad')}</div><p class="mt-3 text-sm text-slate-400">Total synchronization: ${soma}. Gifts acquired: ${s.dons.length}.</p>`;
 }
 
 function render() {
@@ -272,15 +273,15 @@ function render() {
     <div class="mx-auto max-w-6xl space-y-2 px-3 pt-2">
       <div class="space-y-2 sm:flex sm:items-center sm:gap-2 sm:space-y-0">
       <div class="flex items-center gap-2 sm:contents">
-        <input data-f="nome" value="${s.nome.replace(/"/g, '&quot;')}" placeholder="Nome do personagem" class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 font-serif sm:order-1 text-lg text-amber-300 outline-none ring-1 ring-slate-700 focus:ring-amber-500">
-        <div class="flex gap-1 sm:order-4">${[['tema', document.documentElement.classList.contains('light') ? '☾' : '☀', 'Tema claro/escuro'], ['export', '⇩', 'Exportar'], ['import', '⇧', 'Importar'], ['reset', '↺', 'Novo']].map(([a, ic, n]) => `<button data-act="${a}" title="${n}" aria-label="${n}" class="h-9 rounded bg-slate-800 px-2.5 text-sm hover:bg-slate-700">${ic}<span class="ml-1 hidden lg:inline">${n}</span></button>`).join('')}</div>
+        <input data-f="nome" value="${s.nome.replace(/"/g, '&quot;')}" placeholder="Character name" class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 font-serif sm:order-1 text-lg text-amber-300 outline-none ring-1 ring-slate-700 focus:ring-amber-500">
+        <div class="flex gap-1 sm:order-4">${[['tema', document.documentElement.classList.contains('light') ? '☾' : '☀', 'Light/dark theme'], ['export', '⇩', 'Export'], ['import', '⇧', 'Import'], ['reset', '↺', 'New']].map(([a, ic, n]) => `<button data-act="${a}" title="${n}" aria-label="${n}" class="h-9 rounded bg-slate-800 px-2.5 text-sm hover:bg-slate-700">${ic}<span class="ml-1 hidden lg:inline">${n}</span></button>`).join('')}</div>
       </div>
       <div class="flex items-center gap-2 sm:contents">
         <select data-f="classe" class="min-w-0 flex-1 rounded bg-slate-900 px-2 py-1.5 text-sm ring-1 ring-slate-700 sm:order-2 sm:flex-none">${classes.map(c => `<option value="${c.id}" ${c.id === s.classe ? 'selected' : ''}>${c.nome}</option>`).join('')}</select>
-        <div class="ml-auto flex items-center gap-2 sm:order-3 sm:ml-0"><span class="text-xs uppercase tracking-widest text-slate-500">Nível</span>${step('lvl', '', s.nivel)}</div>
+        <div class="ml-auto flex items-center gap-2 sm:order-3 sm:ml-0"><span class="text-xs uppercase tracking-widest text-slate-500">Level</span>${step('lvl', '', s.nivel)}</div>
       </div>
       </div>
-      <div class="-mx-3 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 pb-1 lg:[&>*]:flex-1">${chip('PD livres', dpLivre(), dpLivre() < 0)}${chip('PC', pcLivres(), pcLivres() < 0, 'text-emerald-300')}${chip('Vida', pv(), false, 'text-rose-300')}${chip('Iniciativa', ini())}${chip('Ki', kiTotal(), false, 'text-sky-300')}${chip('Zeon', finalMag('zeon', ''), false, 'text-violet-300')}${chip('PD total', total(), false, 'text-slate-300')}</div>
+      <div class="-mx-3 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 pb-1 lg:[&>*]:flex-1">${chip('Free DP', dpLivre(), dpLivre() < 0)}${chip('CP', pcLivres(), pcLivres() < 0, 'text-emerald-300')}${chip('Life', pv(), false, 'text-rose-300')}${chip('Initiative', ini())}${chip('Ki', kiTotal(), false, 'text-sky-300')}${chip('Zeon', finalMag('zeon', ''), false, 'text-violet-300')}${chip('Total DP', total(), false, 'text-slate-300')}</div>
       <div class="h-1.5 overflow-hidden rounded bg-slate-800"><div class="h-full ${dpLivre() < 0 ? 'bg-red-500' : 'bg-amber-500'} transition-all" style="width:${pct}%"></div></div>
     </div>
     <nav class="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-3 py-2 max-sm:[mask-image:linear-gradient(to_right,#000_88%,transparent)]">${TABS.map(([k, n]) => `<button data-act="tab" data-k="${k}" class="whitespace-nowrap rounded-full px-4 py-1.5 text-sm ${tab === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}">${n}</button>`).join('')}</nav>
@@ -296,16 +297,16 @@ const ATK: Record<string, string> = { AGI: 'agi', CON: 'con', DES: 'des', FUE: '
 function importarAntigo(o: any): string[] {
   const av: string[] = [], n = novo(), L = legado as Record<string, Record<string, string>>;
   const cl = classes.find(c => (c as { cat?: string }).cat === o.categoria);
-  if (cl) n.classe = cl.id; else av.push(`Classe não reconhecida (${o.categoria}); usei ${C().nome}.`);
+  if (cl) n.classe = cl.id; else av.push(`Class not recognized (${o.categoria}); using ${C().nome}.`);
   n.nome = o.nombre || ''; n.nivel = clamp(Number(o.nivel) || 1, 1, 30); n.sexo = o.sexo === 'Mujer' ? 'm' : 'h';
-  if (racas.some(r => r.id === o.raza)) n.raca = o.raza; else av.push(`Raça não reconhecida (${o.raza}).`);
+  if (racas.some(r => r.id === o.raza)) n.raca = o.raza; else av.push(`Race not recognized (${o.raza}).`);
   for (const x of [...(o.ventajas ?? []), ...(o.desventajas ?? [])]) {
     if (x.origen !== 'ORIGEN_PC') continue;
     const v = vantagens.find(y => y.id === x.ventaja);
-    if (!v) { av.push(`Vantagem/desvantagem não encontrada: ${x.ventaja}.`); continue; }
+    if (!v) { av.push(`Advantage/disadvantage not found: ${x.ventaja}.`); continue; }
     const c = v.custos.includes(x.pc) ? x.pc : v.custos.includes(-x.pc) ? -x.pc : v.custos[0];
     const op = v.lista === 'LISTA_CARACTERISTICAS' ? ATK[x.opcion] : v.lista === 'LISTA_HABILIDADES_SECUNDARIAS' ? L.sk[x.opcion] : v.lista === 'LISTA_TIPOS_SECUNDARIAS' ? L.tipos[x.opcion] : undefined;
-    if (v.lista && !op) av.push(`Opção não reconhecida em "${v.nome}" (${x.opcion}).`);
+    if (v.lista && !op) av.push(`Option not recognized in "${v.nome}" (${x.opcion}).`);
     n.vent.push(op ? { id: v.id, c, o: op } : { id: v.id, c });
   }
   s = n;
@@ -322,20 +323,20 @@ function importarAntigo(o: any): string[] {
   for (const b of o.bonificadoresNaturales ?? []) for (const f of ['fisico', 'mental', 'extra']) { const id = L.sk[b?.[f]]; if (id) n.nat[id] = (n.nat[id] || 0) + 1; }
   for (const e of o.elan ?? []) {
     const g = elanData.find(x => x.id === e.nombre);
-    if (!g) { av.push(`Elan não reconhecido: ${e.nombre}.`); continue; }
+    if (!g) { av.push(`Elan not recognized: ${e.nombre}.`); continue; }
     n.elan[g.nome] = Number(e.sincronizacion) || 0;
-    for (const d of e.dones ?? []) { const id = typeof d === 'string' ? d : d.nombre; if (g.dons.some(x => x.id === id)) n.dons.push(id); else av.push(`Dom de Elan não reconhecido: ${id}.`); }
+    for (const d of e.dones ?? []) { const id = typeof d === 'string' ? d : d.nombre; if (g.dons.some(x => x.id === id)) n.dons.push(id); else av.push(`Elan gift not recognized: ${id}.`); }
   }
   for (const v of o.viasMagia ?? []) {
     const id = L.vias[v.via] ?? v.via;
-    if (magia.vias.some(x => x.id === id)) n.vias.push({ id, n: Number(v.nivel) || 0 }); else av.push(`Via não reconhecida: ${v.via}.`);
-    if (v.conjurosLibres?.length) av.push('Os feitiços livres escolhidos não foram importados; escolha de novo na aba Vias.');
+    if (magia.vias.some(x => x.id === id)) n.vias.push({ id, n: Number(v.nivel) || 0 }); else av.push(`Path not recognized: ${v.via}.`);
+    if (v.conjurosLibres?.length) av.push('The free spells you chose were not imported; choose them again in the Paths tab.');
   }
-  const add = (t: string, lista: any[], campo: string, vest = false) => { for (const x of lista ?? []) { const id = x[campo]; if (catalogo(t).some(i => i.id === id)) n.eq.push({ t, id, ...(vest && x.equipado ? { w: true } : {}) }); else av.push(`Item não encontrado: ${id}.`); } };
+  const add = (t: string, lista: any[], campo: string, vest = false) => { for (const x of lista ?? []) { const id = x[campo]; if (catalogo(t).some(i => i.id === id)) n.eq.push({ t, id, ...(vest && x.equipado ? { w: true } : {}) }); else av.push(`Item not found: ${id}.`); } };
   add('a', o.armas, 'arma'); add('r', o.armaduras, 'armadura', true); add('e', o.equipoComprado, 'equipoComprado');
   const rest = ((o.dinero?.oro || 0) * 100) + ((o.dinero?.plata || 0) * 10) + (o.dinero?.cobre || 0), tot = rest + n.eq.reduce((a, x) => a + cobre(itemDe(x).p), 0);
   n.ouro = [Math.floor(tot / 100), Math.floor((tot % 100) / 10), tot % 10];
-  for (const k of ['tecnicasKi', 'artesMarciales', 'disciplinasPsiquicas', 'arsMagnus', 'conjurosSueltos', 'esferasMetamagicas']) if (o[k]?.length) av.push(`Não importado (ainda não existe no novo sistema): ${k}.`);
+  for (const k of ['tecnicasKi', 'artesMarciales', 'disciplinasPsiquicas', 'arsMagnus', 'conjurosSueltos', 'esferasMetamagicas']) if (o[k]?.length) av.push(`Not imported (does not exist in the new system yet): ${k}.`);
   s = n;
   return av;
 }
@@ -386,7 +387,7 @@ app.addEventListener('click', e => {
     s.vent.push(so ? { id: k, c, o: so.value } : { id: k, c });
   }
   else if (act === 'tema') { const l = document.documentElement.classList.toggle('light'); localStorage.setItem('anima-tema', l ? 'light' : 'dark'); }
-  else if (act === 'reset') { if (!confirm('Começar um personagem novo?')) return; s = novo(); }
+  else if (act === 'reset') { if (!confirm('Start a new character?')) return; s = novo(); }
   else if (act === 'import') { document.getElementById('imp')!.click(); return; }
   else if (act === 'export') {
     const a = document.createElement('a');
@@ -423,8 +424,8 @@ document.getElementById('imp')!.addEventListener('change', async e => {
   if (!f) return;
   try {
     const j = JSON.parse(await f.text());
-    if (j && j.allHabilidades) { const av = importarAntigo(j); save(); render(); alert('Personagem do sistema antigo importado.' + (av.length ? '\n\nAvisos:\n- ' + [...new Set(av)].join('\n- ') : '')); }
+    if (j && j.allHabilidades) { const av = importarAntigo(j); save(); render(); alert('Character imported from the old system.' + (av.length ? '\n\nWarnings:\n- ' + [...new Set(av)].join('\n- ') : '')); }
     else { s = { ...novo(), ...j }; save(); render(); }
-  } catch { alert('Arquivo inválido.'); }
+  } catch { alert('Invalid file.'); }
 });
 render();
