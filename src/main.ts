@@ -30,8 +30,8 @@ const acuBase = (v: number) => (v <= 9 ? 1 : v <= 12 ? 2 : v <= 15 ? 3 : 4);
 const TABS: [string, string][] = [['atr', 'Attributes'], ['raca', 'Race'], ['cmb', 'Combat'], ['ki', 'Ki'], ['mag', 'Magic'], ['via', 'Paths'], ['sob', 'Psychic'], ['vant', 'Advantages'], ['eq', 'Equipment'], ['sec', 'Secondary'], ['elan', 'Elan']];
 
 interface Vent { id: string; c: number; o?: string }
-interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[] }
-const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [] });
+interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[] }
+const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [] });
 const KEY = 'anima-forge';
 let s: State = { ...novo(), ...JSON.parse(localStorage.getItem(KEY) || '{}') };
 let tab = 'atr', vsub = 'v', busca = '', esub = 'a';
@@ -145,6 +145,15 @@ const fmt = (c: number) => `${c < 0 ? '-' : ''}${Math.floor(Math.abs(c) / 100)}g
 const TIPOS = ['Cut', 'Impact', 'Thrust', 'Heat', 'Electricity', 'Cold', 'Energy'];
 const GRUPOS_EQ: Record<string, string> = { animales: 'Animals', calzado: 'Footwear', decoracion: 'Decoration', embarcaciones: 'Boats', orfebreria: 'Goldsmithing', raciones: 'Rations', transporte: 'Transport', varios: 'Miscellaneous', venenos: 'Poisons', vestimenta: 'Clothing', vivienda: 'Housing' };
 const infoEq = (t: string, i: Item) => (t === 'a' ? `damage ${i.dm}${i.b ? ` +${bonus(A(i.b))}` : ''}, speed ${i.v >= 0 ? '+' : ''}${i.v}, STR ${i.fu}${i.f2 ? '/' + i.f2 : ''}, critical ${i.k.filter(Boolean).join('/')}${i.e.length ? ', ' + i.e.join(', ') : ''}` : t === 'r' ? `${i.l}, ${i.cl}, TA ${i.ta.join('/')}, requires armor ${i.rq}` : i.w ? `${i.w} kg` : '');
+const esc = (x: string) => x.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const TIPOS_MAG = ['Weapon', 'Armor', 'Shield', 'Staff', 'Wand', 'Ring', 'Amulet', 'Cloak', 'Boots', 'Gloves', 'Helm', 'Belt', 'Orb', 'Tome', 'Other'];
+const FIELD = 'rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500';
+const customUI = () => `<datalist id="tipos-mag">${TIPOS_MAG.map(x => `<option value="${x}">`).join('')}</datalist>
+  <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-sm text-slate-400">Create your own magic items: name, type, quality bonus and a description of their abilities.</p><button data-act="cadd" class="rounded bg-amber-500 px-4 py-2 text-slate-950">New item</button></div>` +
+  (s.custom.length ? s.custom.map((c, i) => `<section class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
+    <div class="flex items-center gap-2"><input data-f="cust" data-i="${i}" data-k="nome" value="${esc(c.nome)}" placeholder="Item name" class="${FIELD} min-w-0 flex-1 font-serif text-lg! text-amber-300"><button data-act="cdel" data-k="${i}" class="${BT}" title="Delete item" aria-label="Delete item">×</button></div>
+    <div class="mt-2 flex flex-wrap gap-2"><input data-f="cust" data-i="${i}" data-k="tipo" list="tipos-mag" value="${esc(c.tipo)}" placeholder="Type (weapon, staff...)" class="${FIELD} min-w-0 flex-1"><label class="flex items-center gap-2 text-sm text-slate-400">Quality<select data-f="cust" data-i="${i}" data-k="bonus" class="${FIELD}">${[0, 5, 10, 15].map(b => `<option value="${b}" ${b === c.bonus ? 'selected' : ''}>${b ? '+' + b : '0'}</option>`).join('')}</select></label></div>
+    <textarea data-f="cust" data-i="${i}" data-k="desc" rows="4" placeholder="Abilities of the item..." class="${FIELD} mt-2 w-full">${esc(c.desc)}</textarea></section>`).join('') : '<p class="text-sm text-slate-500">No magic items yet.</p>');
 const skById = (id: string) => SKS.find(h => h.id === id)!;
 const SKN: Record<string, string> = Object.fromEntries(SKS.map(h => [h.id, h.nome]));
 const CATN: Record<string, string> = Object.fromEntries(SEC);
@@ -217,14 +226,14 @@ function painel(): string {
     const dono = mon.map(({ x, i, it }) => row(`${it.n}${x.t === 'r' && x.w ? ' <span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">worn</span>' : ''}`,
       `<div class="flex items-center gap-2">${x.t === 'r' ? `<button data-act="ewear" data-k="${i}" class="rounded bg-slate-800 px-2 py-1 text-xs text-amber-300">${x.w ? 'Take off' : 'Wear'}</button>` : ''}<button data-act="edel" data-k="${i}" class="${BT}">×</button></div>`,
       `${infoEq(x.t, it)}${x.t === 'r' && armaEf < it.rq ? ' <span class="text-red-400">(your Wear Armor skill is too low)</span>' : ''}`)).join('');
-    const sub: [string, string][] = [['a', 'Weapons'], ['r', 'Armors'], ['e', 'Items']];
+    const sub: [string, string][] = [['a', 'Weapons'], ['r', 'Armors'], ['e', 'Items'], ['c', 'Magic items']];
     const cat = catalogo(esub), gname = (i: Item) => (esub === 'a' ? i.c[0] : esub === 'r' ? i.cl : GRUPOS_EQ[i.g] ?? i.g) as string;
     const grupos = [...new Set(cat.map(gname))].sort();
     const lista = grupos.map(g => `<details data-g="eq:${esub}:${g}" class="rounded-lg bg-slate-900/50 px-3" ${open.has(`eq:${esub}:${g}`) || q ? 'open' : ''}><summary class="cursor-pointer py-2 text-amber-300">${g}</summary>${cat.filter(i => gname(i) === g).map(i => `<div data-n="${i.n.toLowerCase()}" class="flex items-center justify-between gap-3 border-t border-slate-800 py-2 ${q && !i.n.toLowerCase().includes(q) ? 'hidden' : ''}"><div><div class="text-sm">${i.n}</div><div class="text-xs text-slate-500">${fmt(cobre(i.p))}, ${i.w} kg${infoEq(esub, i) ? ', ' + infoEq(esub, i) : ''}</div></div><button data-act="eadd" data-k="${esub}:${i.id}" class="rounded bg-slate-800 px-3 py-1 text-sm text-amber-300 hover:bg-amber-500 hover:text-slate-950">Buy</button></div>`).join('')}</details>`).join('');
     const kg = mon.reduce((a, m) => a + m.it.w, 0);
     return card('Money', `<div class="flex flex-wrap items-center gap-3 text-sm">${['gold', 'silver', 'copper'].map((n, k) => `<label class="flex items-center gap-1">${n}<input type="number" min="0" data-f="ouro" data-k="${k}" value="${s.ouro[k]}" class="w-20 rounded bg-slate-900 px-2 py-1 text-right ring-1 ring-slate-700"></label>`).join('')}<span class="${saldo() < 0 ? 'text-red-400' : 'text-amber-300'}">Balance: <b class="font-mono">${fmt(saldo())}</b></span><span class="text-slate-500">1 gold = 10 silver = 100 copper</span></div>`) +
       card('Your items', (dono || '<p class="text-sm text-slate-500">Nothing bought yet.</p>') + (mon.length ? `<p class="mt-2 text-sm text-slate-400">Total weight: ${Math.round(kg * 10) / 10} kg${vest.length ? `. Worn protection: ${TIPOS.map((n, k) => `${n} ${ta[k]}`).join(', ')}. Natural penalty ${vest.reduce((a, v) => a + v.pn, 0)}, movement restriction ${vest.reduce((a, v) => a + v.rm, 0)}.` : ''}</p>` : '')) +
-      `<div class="flex gap-2">${sub.map(([k, n]) => `<button data-act="esub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${esub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}<input data-q value="${busca}" placeholder="Search..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500"></div><div class="space-y-2">${lista}</div>`;
+      `<div class="flex gap-2">${sub.map(([k, n]) => `<button data-act="esub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${esub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}${esub === 'c' ? '' : `<input data-q value="${busca}" placeholder="Search..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500">`}</div>${esub === 'c' ? `<div class="space-y-4">${customUI()}</div>` : `<div class="space-y-2">${lista}</div>`}`;
   }
   if (tab === 'vant') {
     const dis = vsub === 'd', P = pcs(s.vent), q = busca.toLowerCase();
@@ -375,6 +384,8 @@ app.addEventListener('click', e => {
     s.vias[i].n = nv; limpaLivres(k);
   }
   else if (act === 'esub') esub = k;
+  else if (act === 'cadd') s.custom.push({ nome: '', tipo: 'Weapon', bonus: 0, desc: '' });
+  else if (act === 'cdel') { if (!confirm('Delete this magic item?')) return; s.custom.splice(Number(k), 1); }
   else if (act === 'eadd') { const [tp, id] = k.split(':'); s.eq.push({ t: tp, id }); }
   else if (act === 'edel') s.eq.splice(Number(k), 1);
   else if (act === 'ewear') s.eq[Number(k)].w = !s.eq[Number(k)].w;
@@ -402,6 +413,11 @@ app.addEventListener('change', e => {
   else if (t.dataset.f === 'classe') s.classe = t.value;
   else if (t.dataset.f === 'raca') s.raca = t.value;
   else if (t.dataset.f === 'sexo') s.sexo = t.value;
+  else if (t.dataset.f === 'cust') {
+    const c = s.custom[Number(t.dataset.i)], k = t.dataset.k as 'nome' | 'tipo' | 'bonus' | 'desc';
+    if (c) { if (k === 'bonus') c.bonus = Number(t.value); else c[k] = t.value; save(); }
+    return;
+  }
   else if (t.dataset.f === 'ouro') s.ouro[Number(t.dataset.k)] = Math.max(0, Math.floor(Number(t.value)) || 0);
   else if (t.dataset.f === 'livre') { if (t.value) s.livres[t.dataset.k!] = t.value; else delete s.livres[t.dataset.k!]; }
   else return;
