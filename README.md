@@ -4,6 +4,8 @@ A character sheet builder for **Anima: Beyond Fantasy**, built with TypeScript a
 
 Anima Forge is a rewrite of the original [Anima Unico](https://github.com/wwhere/animaunico) generator. It keeps the game data from that project, adds a new interface with a light/dark theme, and can import characters saved by the old app.
 
+**Live site:** https://guilhermop.github.io/Anima_new/
+
 > Unofficial fan project. It is not affiliated with or endorsed by Anima Project Studio or Edge Entertainment. See [Credits and legal](#credits-and-legal).
 
 ## Features
@@ -42,6 +44,8 @@ The repository includes a workflow at `.github/workflows/deploy.yml`.
 3. Every push to `main` builds the project and publishes it. Follow the progress in the **Actions** tab.
 
 The Vite `base` is set to `./`, so the site works under any repository name.
+
+The live version of this project is published at https://guilhermop.github.io/Anima_new/.
 
 ## Importing characters from the old app
 
