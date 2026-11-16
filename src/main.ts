@@ -1,4 +1,6 @@
 import './style.css';
+import ic_chevron_left from 'lucide-static/icons/chevron-left.svg?raw';
+import ic_chevron_right from 'lucide-static/icons/chevron-right.svg?raw';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
@@ -37,7 +39,7 @@ import equip from './equip.json';
 import legado from './legacy.json';
 const SKS = habs as { id: string; nome: string; g: string; a: string }[];
 
-const ICONS: Record<string, string> = { 'scroll-text': ic_scroll_text, 'dumbbell': ic_dumbbell, 'users': ic_users, 'swords': ic_swords, 'flame': ic_flame, 'sparkles': ic_sparkles, 'route': ic_route, 'brain': ic_brain, 'badge-plus': ic_badge_plus, 'backpack': ic_backpack, 'graduation-cap': ic_graduation_cap, 'moon-star': ic_moon_star, 'user': ic_user, 'sun': ic_sun, 'moon': ic_moon, 'printer': ic_printer, 'download': ic_download, 'upload': ic_upload, 'rotate-ccw': ic_rotate_ccw, 'coins': ic_coins, 'shield': ic_shield, 'scale': ic_scale, 'package-open': ic_package_open };
+const ICONS: Record<string, string> = { 'chevron-left': ic_chevron_left, 'chevron-right': ic_chevron_right, 'scroll-text': ic_scroll_text, 'dumbbell': ic_dumbbell, 'users': ic_users, 'swords': ic_swords, 'flame': ic_flame, 'sparkles': ic_sparkles, 'route': ic_route, 'brain': ic_brain, 'badge-plus': ic_badge_plus, 'backpack': ic_backpack, 'graduation-cap': ic_graduation_cap, 'moon-star': ic_moon_star, 'user': ic_user, 'sun': ic_sun, 'moon': ic_moon, 'printer': ic_printer, 'download': ic_download, 'upload': ic_upload, 'rotate-ccw': ic_rotate_ccw, 'coins': ic_coins, 'shield': ic_shield, 'scale': ic_scale, 'package-open': ic_package_open };
 const ico = (n: string, cls = 'h-4 w-4') => (ICONS[n] ?? '').replace(/<!--[\s\S]*?-->/, '').replace(/class="[^"]*"/, `class="${cls}" aria-hidden="true"`);
 const TAB_ICON: Record<string, string> = { sheet: 'scroll-text', atr: 'dumbbell', raca: 'users', cmb: 'swords', ki: 'flame', mag: 'sparkles', via: 'route', sob: 'brain', vant: 'badge-plus', eq: 'backpack', sec: 'graduation-cap', elan: 'moon-star' };
 const BONUS = [0, -30, -20, -10, -5, 0, 5, 5, 10, 10, 15, 20, 20, 25, 25, 30, 35, 35, 40, 40, 45];
@@ -182,7 +184,7 @@ const FIELD = 'rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring
 const customUI = () => `<datalist id="tipos-mag">${TIPOS_MAG.map(x => `<option value="${x}">`).join('')}</datalist>
   <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-sm text-slate-400">Create your own magic items: name, type, quality bonus and a description of their abilities.</p><button data-act="cadd" class="rounded bg-amber-500 px-4 py-2 text-slate-950">New item</button></div>` +
   (s.custom.length ? s.custom.map((c, i) => `<section class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
-    <div class="flex items-center gap-2"><input data-f="cust" data-i="${i}" data-k="nome" value="${esc(c.nome)}" placeholder="Item name" class="${FIELD} min-w-0 flex-1 font-serif text-lg! text-amber-300"><button data-act="cdel" data-k="${i}" class="${BT}" title="Delete item" aria-label="Delete item">×</button></div>
+    <div class="flex items-center gap-2"><input data-f="cust" data-i="${i}" data-k="nome" value="${esc(c.nome)}" placeholder="Item name" class="${FIELD} min-w-0 flex-1 font-serif text-base! text-amber-300"><button data-act="cdel" data-k="${i}" class="${BT}" title="Delete item" aria-label="Delete item">×</button></div>
     <div class="mt-2 flex flex-wrap gap-2"><input data-f="cust" data-i="${i}" data-k="tipo" list="tipos-mag" value="${esc(c.tipo)}" placeholder="Type (weapon, staff...)" class="${FIELD} min-w-0 flex-1"><label class="flex items-center gap-2 text-sm text-slate-400">Quality<select data-f="cust" data-i="${i}" data-k="bonus" class="${FIELD}">${[0, 5, 10, 15].map(b => `<option value="${b}" ${b === c.bonus ? 'selected' : ''}>${b ? '+' + b : '0'}</option>`).join('')}</select></label></div>
     <textarea data-f="cust" data-i="${i}" data-k="desc" rows="4" placeholder="Abilities of the item..." class="${FIELD} mt-2 w-full">${esc(c.desc)}</textarea></section>`).join('') : '<p class="text-sm text-slate-500">No magic items yet.</p>');
 const skById = (id: string) => SKS.find(h => h.id === id)!;
@@ -208,20 +210,20 @@ const step = (act: string, k: string, v: string | number, d = 1) =>
   `<div class="flex items-center gap-2"><button data-act="${act}" data-k="${k}" data-d="-${d}" class="${BT}">−</button><span class="w-12 text-center font-mono">${v}</span><button data-act="${act}" data-k="${k}" data-d="${d}" class="${BT}">+</button></div>`;
 const row = (label: string, right: string, hint = '') =>
   `<div class="flex items-center justify-between gap-3 border-b border-slate-800/60 py-2 last:border-0"><div class="min-w-0"><div class="truncate sm:whitespace-normal">${label}</div>${hint ? `<div class="text-xs text-slate-500">${hint}</div>` : ''}</div><div class="flex shrink-0 items-center gap-3">${right}</div></div>`;
-const card = (t: string, body: string, icon = '') => `<section class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20"><h2 class="mb-2 flex items-center gap-2 border-b-2 border-amber-500/40 pb-1 font-serif text-base font-bold uppercase tracking-widest text-amber-400">${icon ? ico(icon, 'h-4 w-4 shrink-0') : ''}${t}</h2>${body}</section>`;
-const chip = (l: string, v: string | number, bad = false, cor = 'text-amber-300') => `<div class="min-w-[4.8rem] shrink-0 snap-start rounded-lg border-b-2 border-amber-500/70 bg-slate-900 px-3 py-1 text-center ring-1 ${bad ? 'ring-red-500/70' : 'ring-slate-700'}"><div class="text-[10px] uppercase tracking-widest text-slate-500">${l}</div><div class="font-mono text-lg font-bold ${bad ? 'text-red-400' : cor}">${v}</div></div>`;
+const card = (t: string, body: string, icon = '') => `<section class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20"><h2 class="mb-2 flex items-center gap-2 border-b-2 border-amber-500/40 pb-1 font-serif text-sm font-bold uppercase tracking-wider text-amber-400">${icon ? ico(icon, 'h-4 w-4 shrink-0') : ''}${t}</h2>${body}</section>`;
+const chip = (l: string, v: string | number, bad = false, cor = 'text-amber-300') => `<div class="min-w-[4.8rem] shrink-0 snap-start rounded-lg border-b-2 border-amber-500/70 bg-slate-900 px-3 py-1 text-center ring-1 ${bad ? 'ring-red-500/70' : 'ring-slate-700'}"><div class="text-[10px] uppercase tracking-widest text-slate-500">${l}</div><div class="font-mono text-base font-bold ${bad ? 'text-red-400' : cor}">${v}</div></div>`;
 
-const box = (l: string, v: string | number) => `<div class="rounded-lg bg-slate-900 px-3 py-2 text-center ring-1 ring-slate-700"><div class="text-[10px] uppercase tracking-widest text-slate-500">${l}</div><div class="font-mono text-xl font-bold text-amber-300">${v}</div></div>`;
+const box = (l: string, v: string | number) => `<div class="rounded-lg bg-slate-900 px-3 py-2 text-center ring-1 ring-slate-700"><div class="text-[10px] uppercase tracking-widest text-slate-500">${l}</div><div class="font-mono text-lg font-bold text-amber-300">${v}</div></div>`;
 const attrCard = (k: string, n: string, edit: boolean) => {
   const v = A(k), b = bonus(v);
-  return `<div class="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-center shadow-md shadow-black/10"><div class="text-[10px] font-semibold uppercase tracking-widest text-slate-500">${n}</div><div class="font-serif text-3xl font-bold text-amber-400">${v}</div><div class="text-xs text-slate-400">${b >= 0 ? '+' : ''}${b} bonus</div>${v !== s.at[k] ? `<div class="text-[10px] text-slate-500">base ${s.at[k]}</div>` : ''}${edit ? `<div class="mt-2 flex justify-center gap-2">${[['−', -1], ['+', 1]].map(([l, d]) => `<button data-act="at" data-k="${k}" data-d="${d}" class="${BT}" aria-label="${l === '+' ? 'Increase' : 'Decrease'} ${n}">${l}</button>`).join('')}</div>` : ''}</div>`;
+  return `<div class="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-center shadow-md shadow-black/10"><div class="text-[10px] font-semibold uppercase tracking-widest text-slate-500">${n}</div><div class="font-serif text-2xl font-bold text-amber-400">${v}</div><div class="text-xs text-slate-400">${b >= 0 ? '+' : ''}${b} bonus</div>${v !== s.at[k] ? `<div class="text-[10px] text-slate-500">base ${s.at[k]}</div>` : ''}${edit ? `<div class="mt-2 flex justify-center gap-2">${[['−', -1], ['+', 1]].map(([l, d]) => `<button data-act="at" data-k="${k}" data-d="${d}" class="${BT}" aria-label="${l === '+' ? 'Increase' : 'Decrease'} ${n}">${l}</button>`).join('')}</div>` : ''}</div>`;
 };
 const gridAttrs = (edit: boolean) => `<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">${ATTRS.map(([k, n]) => attrCard(k, n, edit)).join('')}</div>`;
 const vazio = (txt: string) => `<p class="text-sm text-slate-500">${txt}</p>`;
 const optLabel = (o?: string) => (o ? ` (${ATTRS.find(a => a[0] === o)?.[1] ?? SKN[o] ?? CATN[o] ?? o})` : '');
 function folha(): string {
   const raca = RZ()?.nome ?? '-';
-  const cab = `<div class="flex items-center gap-4"><div class="h-20 w-20 shrink-0 overflow-hidden rounded-full bg-slate-800 ring-2 ring-amber-500/60">${s.avatar ? `<img src="${s.avatar}" class="h-full w-full object-cover" alt="Character portrait">` : `<div class="flex h-full w-full items-center justify-center text-slate-500">${ico('user', 'h-10 w-10')}</div>`}</div><div class="min-w-0"><div class="font-serif text-2xl font-bold text-amber-400">${esc(s.nome) || 'Unnamed character'}</div><div class="text-sm text-slate-400">${raca} · ${C().nome} · Level ${s.nivel}</div>${s.avatar ? '<button data-act="avatardel" class="mt-1 text-xs text-slate-500 underline print:hidden">Remove portrait</button>' : '<button data-act="avatar" class="mt-1 text-xs text-slate-500 underline print:hidden">Add portrait</button>'}</div></div>`;
+  const cab = `<div class="flex items-center gap-4"><div class="h-20 w-20 shrink-0 overflow-hidden rounded-full bg-slate-800 ring-2 ring-amber-500/60">${s.avatar ? `<img src="${s.avatar}" class="h-full w-full object-cover" alt="Character portrait">` : `<div class="flex h-full w-full items-center justify-center text-slate-500">${ico('user', 'h-10 w-10')}</div>`}</div><div class="min-w-0"><div class="font-serif text-xl font-bold text-amber-400">${esc(s.nome) || 'Unnamed character'}</div><div class="text-sm text-slate-400">${raca} · ${C().nome} · Level ${s.nivel}</div>${s.avatar ? '<button data-act="avatardel" class="mt-1 text-xs text-slate-500 underline print:hidden">Remove portrait</button>' : '<button data-act="avatar" class="mt-1 text-xs text-slate-500 underline print:hidden">Add portrait</button>'}</div></div>`;
   const hab = SKS.filter(h => (s.pts[h.id] || 0) > 0 || (s.nat[h.id] || 0) > 0).sort((a, b) => skFinal(b) - skFinal(a)).slice(0, 12);
   const chips = (xs: string[], cls = '') => (xs.length ? `<div class="flex flex-wrap gap-1.5">${xs.map(x => `<span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs ring-1 ring-slate-700 ${cls}">${x}</span>`).join('')}</div>` : vazio('None'));
   const mon = s.eq.map(x => ({ x, it: itemDe(x) }));
@@ -333,6 +335,7 @@ function painel(): string {
 }
 
 function render() {
+  const prevNav = document.getElementById('tabs')?.scrollLeft ?? 0;
   const pct = clamp((dpGasto() / total()) * 100, 0, 100), duas = ['sheet', 'cmb', 'sec'].includes(tab), anim = tab !== lastTab;
   lastTab = tab;
   document.getElementById('app')!.innerHTML = `
@@ -341,7 +344,7 @@ function render() {
       <div class="space-y-2 sm:flex sm:items-center sm:gap-2 sm:space-y-0">
       <div class="flex items-center gap-2 sm:contents">
         <button data-act="avatar" title="Change portrait" aria-label="Change portrait" class="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-slate-900 text-slate-500 ring-1 ring-slate-700 hover:ring-amber-500 sm:order-first">${s.avatar ? `<img src="${s.avatar}" class="h-full w-full object-cover" alt="">` : ico('user', 'mx-auto h-5 w-5')}</button>
-        <input data-f="nome" value="${s.nome.replace(/"/g, '&quot;')}" placeholder="Character name" class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 font-serif sm:order-1 text-lg text-amber-300 outline-none ring-1 ring-slate-700 focus:ring-amber-500">
+        <input data-f="nome" value="${s.nome.replace(/"/g, '&quot;')}" placeholder="Character name" class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 font-serif sm:order-1 text-base text-amber-300 outline-none ring-1 ring-slate-700 focus:ring-amber-500">
         <div class="flex gap-1 sm:order-4">${[['tema', ico(document.documentElement.classList.contains('light') ? 'moon' : 'sun', 'h-4 w-4'), 'Theme'], ['print', ico('printer', 'h-4 w-4'), 'Print'], ['export', ico('download', 'h-4 w-4'), 'Export'], ['import', ico('upload', 'h-4 w-4'), 'Import'], ['reset', ico('rotate-ccw', 'h-4 w-4'), 'New']].map(([a, ic, n]) => `<button data-act="${a}" title="${n}" aria-label="${n}" class="inline-flex h-9 items-center rounded bg-slate-800 px-2.5 text-sm hover:bg-slate-700">${ic}<span class="ml-1 hidden lg:inline">${n}</span></button>`).join('')}</div>
       </div>
       <div class="flex items-center gap-2 sm:contents">
@@ -352,10 +355,16 @@ function render() {
       <div class="-mx-3 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 pb-1 lg:[&>*]:flex-1">${chip('Free DP', dpLivre(), dpLivre() < 0)}${chip('CP', pcLivres(), pcLivres() < 0, 'text-emerald-300')}${chip('Life', pv(), false, 'text-rose-300')}${chip('Initiative', ini())}${chip('Ki', kiTotal(), false, 'text-sky-300')}${chip('Zeon', finalMag('zeon', ''), false, 'text-violet-300')}${chip('Total DP', total(), false, 'text-slate-300')}</div>
       <div class="h-1.5 overflow-hidden rounded bg-slate-800"><div class="h-full ${dpLivre() < 0 ? 'bg-red-500' : 'bg-amber-500'} transition-all" style="width:${pct}%"></div></div>
     </div>
-    <nav class="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-3 py-2 max-sm:[mask-image:linear-gradient(to_right,#000_88%,transparent)]">${TABS.map(([k, n]) => `<button data-act="tab" data-k="${k}" title="${n}" aria-label="${n}" class="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm ${tab === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}"><span class="inline-flex items-center gap-1.5">${ico(TAB_ICON[k], 'h-4 w-4')}<span class="${tab === k ? '' : 'hidden 2xl:inline'}">${n}</span></span></button>`).join('')}</nav>
+    <div class="relative mx-auto max-w-6xl"><button id="navl" data-act="navl" aria-label="Scroll tabs left" class="absolute top-1/2 z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-slate-900 text-amber-400 ring-1 ring-slate-700 transition-opacity hover:ring-amber-500 opacity-0 pointer-events-none left-1">${ico('chevron-left', 'h-4 w-4')}</button>
+    <nav id="tabs" class="flex gap-1 overflow-x-auto scroll-smooth px-9 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)]">${TABS.map(([k, n]) => `<button data-act="tab" data-k="${k}" title="${n}" aria-label="${n}" class="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm ${tab === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}"><span class="inline-flex items-center gap-1.5">${ico(TAB_ICON[k], 'h-4 w-4')}<span class="${tab === k ? '' : 'hidden 2xl:inline'}">${n}</span></span></button>`).join('')}</nav><button id="navr" data-act="navr" aria-label="Scroll tabs right" class="absolute top-1/2 z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-slate-900 text-amber-400 ring-1 ring-slate-700 transition-opacity hover:ring-amber-500 opacity-0 pointer-events-none right-1">${ico('chevron-right', 'h-4 w-4')}</button></div>
   </header>
   <main class="mx-auto max-w-6xl px-3 py-4 pb-16 print:p-0 ${anim ? 'fade-in' : ''} ${duas ? 'lg:columns-2 lg:gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid [&>:only-child]:[column-span:all]' : 'space-y-4'}">${painel()}</main>`;
-  document.querySelector('nav .bg-amber-500')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  const nav = document.getElementById('tabs');
+  if (nav) {
+    nav.style.scrollBehavior = 'auto'; nav.scrollLeft = prevNav; nav.style.scrollBehavior = '';
+    if (anim) document.querySelector('#tabs .bg-amber-500')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    nav.addEventListener('scroll', navState, { passive: true }); navState();
+  }
 }
 
 const ESP: Record<string, string> = { 'Habilidad de Ataque': 'atk', 'Habilidad de Parada': 'par', 'Habilidad de Esquiva': 'esq', 'Llevar Armadura': 'arm', 'Proyección Mágica': 'mag', 'Proyección Psíquica': 'psi', Zeon: 'zeon', ACT: 'act', HB_REGENERACION_ZEONICA: 'reg', HB_NIVEL_DE_VIA: 'via', Convocar: 'conv', Dominar: 'dom', Atar: 'ata', Desconvocar: 'des' };
@@ -408,6 +417,13 @@ function importarAntigo(o: any): string[] {
   s = n;
   return av;
 }
+const navState = () => {
+  const n = document.getElementById('tabs'), l = document.getElementById('navl'), r = document.getElementById('navr');
+  if (!n || !l || !r) return;
+  const off = ['opacity-0', 'pointer-events-none'];
+  off.forEach(c => { l.classList.toggle(c, n.scrollLeft < 4); r.classList.toggle(c, n.scrollLeft + n.clientWidth >= n.scrollWidth - 4); });
+};
+window.addEventListener('resize', navState);
 const save = () => localStorage.setItem(KEY, JSON.stringify(s));
 const app = document.getElementById('app')!;
 app.addEventListener('click', e => {
@@ -457,6 +473,7 @@ app.addEventListener('click', e => {
     s.vent.push(so ? { id: k, c, o: so.value } : { id: k, c });
   }
   else if (act === 'tema') { const l = document.documentElement.classList.toggle('light'); localStorage.setItem('anima-tema', l ? 'light' : 'dark'); }
+  else if (act === 'navl' || act === 'navr') { const n = document.getElementById('tabs')!; n.scrollBy({ left: (act === 'navl' ? -1 : 1) * n.clientWidth * 0.6, behavior: 'smooth' }); return; }
   else if (act === 'avatar') { document.getElementById('avt')!.click(); return; }
   else if (act === 'avatardel') s.avatar = '';
   else if (act === 'print') {
