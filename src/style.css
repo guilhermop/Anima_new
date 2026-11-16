@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cinzel", Georgia, serif;
+}
+
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fade-in { animation: fade 0.22s ease-out; }
+@media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+@media print { body { background: #fff !important; } section { box-shadow: none !important; } }
+
 /* Tema claro: troca as variáveis de cor do Tailwind (inspirado na ficha do D&D Beyond) */
 html.light {
   color-scheme: light;
