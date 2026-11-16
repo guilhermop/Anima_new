@@ -1,6 +1,10 @@
 # Anima Forge
 
+<<<<<<< HEAD
 A character sheet builder for **Anima: Beyond Fantasy**, built with TypeScript and Tailwind CSS 4 (fonts: Inter and Cinzel via Fontsource; icons: Lucide). It runs entirely in the browser (no server, no PHP) and can be hosted for free on GitHub Pages.
+=======
+A character sheet builder for **Anima: Beyond Fantasy**, built with TypeScript and Tailwind CSS. It runs entirely in the browser (no server, no PHP) and can be hosted for free on GitHub Pages.
+>>>>>>> b8dee63137a910d050d49d3cfd1e00115ccb29fc
 
 Anima Forge is a rewrite of the original [Anima Unico](https://github.com/wwhere/animaunico) generator. It keeps the game data from that project, adds a new interface with a light/dark theme, and can import characters saved by the old app.
 
@@ -10,7 +14,10 @@ Anima Forge is a rewrite of the original [Anima Unico](https://github.com/wwhere
 
 ## Features
 
+<<<<<<< HEAD
 - **Sheet**: a one-page summary of the character (portrait, attributes, vitals, combat, resistances, top secondary abilities, advantages, paths, Elan, equipment and magic items). It is the opening tab, and the **Print** button turns it into a printable page or a PDF.
+=======
+>>>>>>> b8dee63137a910d050d49d3cfd1e00115ccb29fc
 - **Attributes**: the 8 characteristics with bonus table, plus resistances (Physical, Disease, Poison, Magic, Psychic) and regeneration.
 - **Race**: 18 races (including the Nephilim variants) with their racial traits. Attribute, resistance and regeneration bonuses are applied to the sheet automatically.
 - **Combat**: Attack, Block, Dodge and Wear Armor with the class cost per point and the class combat limit, plus Life multiples.
@@ -22,7 +29,10 @@ Anima Forge is a rewrite of the original [Anima Unico](https://github.com/wwhere
 - **Equipment**: money tracker, 138 weapons, armors you can wear (with combined protection), general items, and a **Magic items** tab where you create your own items (name, type, quality 0 / +5 / +10 / +15 and a description of their abilities).
 - **Secondary**: the 47 secondary abilities with natural bonus.
 - **Elan**: synchronization with each of the 14 gods and the gifts you can acquire.
+<<<<<<< HEAD
 - **Portrait**: upload an image for your character; it is resized and stored in the browser and included in the export.
+=======
+>>>>>>> b8dee63137a910d050d49d3cfd1e00115ccb29fc
 - **Light and dark theme**, responsive layout (works on phones), and an always-visible header with Free DP, CP, Life, Initiative, Ki, Zeon and Total DP.
 - **Saving**: the sheet is saved automatically in the browser (`localStorage`). You can also export it to a JSON file and import it again.
 
