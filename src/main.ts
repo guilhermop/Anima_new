@@ -63,8 +63,8 @@ const acuBase = (v: number) => (v <= 9 ? 1 : v <= 12 ? 2 : v <= 15 ? 3 : 4);
 const TABS: [string, string][] = [['sheet', 'Sheet'], ['atr', 'Attributes'], ['raca', 'Race'], ['cmb', 'Combat'], ['ki', 'Ki'], ['mag', 'Magic'], ['via', 'Paths'], ['sob', 'Psychic'], ['vant', 'Advantages'], ['eq', 'Equipment'], ['sec', 'Secondary'], ['elan', 'Elan']];
 
 interface Vent { id: string; c: number; o?: string }
-interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[]; avatar: string }
-const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [], avatar: '' });
+interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[]; avatar: string; pcExtra: number }
+const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [], avatar: '', pcExtra: 0 });
 const KEY = 'anima-forge';
 let s: State = { ...novo(), ...JSON.parse(localStorage.getItem(KEY) || '{}') };
 let tab = 'sheet', lastTab = '', vsub = 'v', busca = '', esub = 'a';
@@ -73,7 +73,7 @@ type V = (typeof vantagens)[number];
 const vById = (id: string) => vantagens.find(v => v.id === id) as V;
 const pool = (v: V) => (v.grupo === 'GRUPO_DON' ? 'd' : v.grupo === 'GRUPO_PSIQUICAS' ? 'p' : v.grupo === 'GRUPO_TRASFONDO' ? 't' : 'g');
 function pcs(l: Vent[]) {
-  const P: Record<string, number> = { g: 3, d: 0, p: 0, t: 0 };
+  const P: Record<string, number> = { g: 3 + s.pcExtra, d: 0, p: 0, t: 0 };
   for (const x of l) { const v = vById(x.id); if (v.dis) P[pool(v)] -= x.c; }
   for (const x of l) {
     const v = vById(x.id); if (v.dis) continue;
@@ -138,7 +138,7 @@ const resist = (r: string, a: string) => {
   return s.vent.some(x => HALF[vById(x.id).ef] === r) ? Math.floor(v / 2) : v;
 };
 const regen = () => REGEN[A('con') - 1] + rReg() + s.vent.reduce((t, x) => t + (vById(x.id).ef === 'aumentaRegeneracion' ? vById(x.id).efv : 0), 0);
-const APLICA = new Set(['sumarUnoAUnaCaracteristica', 'restarDosAUnaCaracteristica', 'cambiarUnaCaracteristicaPorNueve', 'aumentaRegeneracion', ...Object.keys(EXC), ...Object.keys(HALF), 'aprendizajeInnato', 'aprendizajeInnatoCampo', 'conocedorTodasMaterias', 'habilidoso', 'aptoEnUnCampo', 'aptoEnUnaMateria', 'sinBonificadorNatural', 'bonificadorNaturalIncrementado']);
+const APLICA = new Set(['sumarUnoAUnaCaracteristica', 'restarDosAUnaCaracteristica', 'cambiarUnaCaracteristicaPorNueve', 'aumentaRegeneracion', ...Object.keys(EXC), ...Object.keys(HALF), 'reflejosRapidos', 'reaccionLenta', 'aprendizajeInnato', 'aprendizajeInnatoCampo', 'conocedorTodasMaterias', 'habilidoso', 'aptoEnUnCampo', 'aptoEnUnaMateria', 'sinBonificadorNatural', 'bonificadorNaturalIncrementado']);
 const RZ = () => racas.find(r => r.id === s.raca);
 const sum = (f: (x: (typeof racas)[number]['tr'][number]) => number) => RZ()?.tr.reduce((a, x) => a + f(x), 0) ?? 0;
 const rAt = (k: string) => sum(x => (x.at as unknown as Record<string, number>)[k] || 0);
@@ -203,7 +203,8 @@ const natOk = () => natUso().sobra <= (extraNat() ? s.nivel : 0);
 const skFinal = (h: (typeof SKS)[number]) => (s.pts[h.id] || 0) + bonus(A(h.a)) * (1 + (semNat() ? 0 : s.nat[h.id] || 0)) + bonusVant(h);
 const pcLivres = () => pcs(s.vent).g;
 const pv = () => 20 + 10 * A('con') + bonus(A('con')) + s.nivel * K().vidaNivel + s.vida * A('con');
-const ini = () => 20 + bonus(A('agi')) + bonus(A('des')) + s.nivel * K().turnoNivel;
+const turnoVent = () => s.vent.reduce((a, x) => a + (ef(x) === 'reflejosRapidos' ? (x.c === 1 ? 25 : x.c === 2 ? 45 : 60) : ef(x) === 'reaccionLenta' ? 30 * x.c : 0), 0);
+const ini = () => 20 + bonus(A('agi')) + bonus(A('des')) + s.nivel * K().turnoNivel + turnoVent();
 
 const BT = 'h-7 w-7 rounded bg-slate-800 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition';
 const step = (act: string, k: string, v: string | number, d = 1) =>
@@ -303,7 +304,7 @@ function painel(): string {
       const sl = v.custos.length > 1 ? `<select data-vc="${v.id}" class="rounded bg-slate-800 px-1 py-1 text-sm">${v.custos.map(k => `<option>${k}</option>`).join('')}</select>` : `<span class="w-8 text-center font-mono text-sm">${c}</span>`;
       return `<div data-n="${v.nome.toLowerCase()}" class="flex items-center justify-between gap-3 border-t border-slate-800 py-2 ${q && !v.nome.toLowerCase().includes(q) ? 'hidden' : ''}" title="${v.desc.replace(/"/g, '&quot;')}"><span class="text-sm">${v.nome}${APLICA.has(v.ef) ? ' <span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">on sheet</span>' : ''}</span><div class="flex items-center gap-2">${OPC(v.lista) ? `<select data-vo="${v.id}" class="max-w-40 rounded bg-slate-800 px-1 py-1 text-sm">${OPC(v.lista)!.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>` : ''}${sl}<button data-act="vadd" data-k="${v.id}" class="rounded bg-slate-800 px-3 py-1 text-sm text-amber-300 hover:bg-amber-500 hover:text-slate-950 disabled:opacity-40" ${m ? `disabled title="${m}"` : ''}>Add</button></div></div>`;
     }).join('')}</details>`).join('');
-    return card('Creation points', `<p class="text-sm text-slate-300">Free: <b class="font-mono ${P.g < 0 ? 'text-red-400' : 'text-amber-300'}">${P.g}</b>${P.d ? ` | Gift: ${P.d}` : ''}${P.p ? ` | Psychic: ${P.p}` : ''}${P.t ? ` | Background: ${P.t}` : ''}. Up to 3 disadvantages, each gives CP back.</p>${sel}`) +
+    return card('Creation points', `<p class="text-sm text-slate-300">Free: <b class="font-mono ${P.g < 0 ? 'text-red-400' : 'text-amber-300'}">${P.g}</b>${P.d ? ` | Gift: ${P.d}` : ''}${P.p ? ` | Psychic: ${P.p}` : ''}${P.t ? ` | Background: ${P.t}` : ''}. Up to 3 disadvantages, each gives CP back.</p>${row('Extra CP', step('pcx', '', s.pcExtra), 'From level-ups: characteristic increases exchanged for CP')}${sel}`) +
       `<div class="flex gap-2">${[['v', 'Advantages'], ['d', 'Disadvantages']].map(([k, n]) => `<button data-act="vsub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${vsub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}<input data-q value="${busca}" placeholder="Search..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500"></div>` +
       `<div class="space-y-2">${lista}</div>`;
   }
@@ -352,8 +353,8 @@ function render() {
         <div class="ml-auto flex items-center gap-2 sm:order-3 sm:ml-0"><span class="text-xs uppercase tracking-widest text-slate-500">Level</span>${step('lvl', '', s.nivel)}</div>
       </div>
       </div>
-          <div class="-mx-3 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 pb-1.5 pt-1 lg:[&>*]:flex-1">${chip('Free DP', dpLivre(), dpLivre() < 0)}${chip('CP', pcLivres(), pcLivres() < 0, 'text-emerald-300')}${chip('Life', pv(), false, 'text-rose-300')}${chip('Initiative', ini())}${chip('Ki', kiTotal(), false, 'text-sky-300')}${chip('Zeon', finalMag('zeon', ''), false, 'text-violet-300')}${chip('Total DP', total(), false, 'text-slate-300')}</div>
-          <div class="h-1.5 overflow-hidden rounded bg-slate-800"><div class="h-full ${dpLivre() < 0 ? 'bg-red-500' : 'bg-amber-500'} transition-all" style="width:${pct}%"></div></div>
+      <div class="-mx-3 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 pb-1.5 pt-1 lg:[&>*]:flex-1">${chip('Free DP', dpLivre(), dpLivre() < 0)}${chip('CP', pcLivres(), pcLivres() < 0, 'text-emerald-300')}${chip('Life', pv(), false, 'text-rose-300')}${chip('Initiative', ini())}${chip('Ki', kiTotal(), false, 'text-sky-300')}${chip('Zeon', finalMag('zeon', ''), false, 'text-violet-300')}${chip('Total DP', total(), false, 'text-slate-300')}</div>
+      <div class="h-1.5 overflow-hidden rounded bg-slate-800"><div class="h-full ${dpLivre() < 0 ? 'bg-red-500' : 'bg-amber-500'} transition-all" style="width:${pct}%"></div></div>
     </div>
     <div class="relative mx-auto max-w-6xl"><button id="navl" data-act="navl" aria-label="Scroll tabs left" class="absolute top-1/2 z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-slate-900 text-amber-400 ring-1 ring-slate-700 transition-opacity hover:ring-amber-500 opacity-0 pointer-events-none left-1">${ico('chevron-left', 'h-4 w-4')}</button>
     <nav id="tabs" class="flex gap-1 overflow-x-auto scroll-smooth px-9 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)]">${TABS.map(([k, n]) => `<button data-act="tab" data-k="${k}" title="${n}" aria-label="${n}" class="whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm ${tab === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}"><span class="inline-flex items-center gap-1.5">${ico(TAB_ICON[k], 'h-4 w-4')}<span class="${tab === k ? '' : 'hidden 2xl:inline'}">${n}</span></span></button>`).join('')}</nav><button id="navr" data-act="navr" aria-label="Scroll tabs right" class="absolute top-1/2 z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-slate-900 text-amber-400 ring-1 ring-slate-700 transition-opacity hover:ring-amber-500 opacity-0 pointer-events-none right-1">${ico('chevron-right', 'h-4 w-4')}</button></div>
@@ -372,17 +373,20 @@ for (const [k, n] of [['Agilidad', 'agi'], ['Constitución', 'con'], ['Destreza'
 const ATK: Record<string, string> = { AGI: 'agi', CON: 'con', DES: 'des', FUE: 'for', INT: 'int', PER: 'per', POD: 'pod', VOL: 'von' };
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function importarAntigo(o: any): string[] {
-  const av: string[] = [], n = novo(), L = legado as Record<string, Record<string, string>>;
+  const av: string[] = [], n = novo(), L = legado as unknown as Record<string, Record<string, string>>, OPC = (legado as unknown as { origenPC: string[] }).origenPC, dadosElan: string[] = [];
   const cl = classes.find(c => (c as { cat?: string }).cat === o.categoria);
   if (cl) n.classe = cl.id; else av.push(`Class not recognized (${o.categoria}); using ${C().nome}.`);
+  n.pcExtra = (o.aumentosCaracteristicas ?? []).filter((a: any) => a.estado === 'gastado' && a.uso === 'PC').length;
   n.nome = o.nombre || ''; n.nivel = clamp(Number(o.nivel) || 1, 1, 30); n.sexo = o.sexo === 'Mujer' ? 'm' : 'h';
   if (racas.some(r => r.id === o.raza)) n.raca = o.raza; else av.push(`Race not recognized (${o.raza}).`);
   for (const x of [...(o.ventajas ?? []), ...(o.desventajas ?? [])]) {
-    if (x.origen !== 'ORIGEN_PC') continue;
-    const v = vantagens.find(y => y.id === x.ventaja);
+    if (typeof x.ventaja === 'string' && x.ventaja.startsWith('ELAN_VENTAJA_')) { dadosElan.push(L.elanGrant[x.ventaja] ?? x.ventaja); continue; }
+    if (!OPC.includes(x.origen)) continue;
+    const v = vantagens.find(y => y.id === (L.vent[x.ventaja] ?? x.ventaja));
     if (!v) { av.push(`Advantage/disadvantage not found: ${x.ventaja}.`); continue; }
     const c = v.custos.includes(x.pc) ? x.pc : v.custos.includes(-x.pc) ? -x.pc : v.custos[0];
-    const op = v.lista === 'LISTA_CARACTERISTICAS' ? ATK[x.opcion] : v.lista === 'LISTA_HABILIDADES_SECUNDARIAS' ? L.sk[x.opcion] : v.lista === 'LISTA_TIPOS_SECUNDARIAS' ? L.tipos[x.opcion] : undefined;
+    const godOp = elanData.find(g => g.id === x.opcion)?.nome;
+    const op = godOp ?? (v.lista === 'LISTA_CARACTERISTICAS' ? ATK[x.opcion] : v.lista === 'LISTA_HABILIDADES_SECUNDARIAS' ? L.sk[x.opcion] : v.lista === 'LISTA_TIPOS_SECUNDARIAS' ? L.tipos[x.opcion] : undefined);
     if (v.lista && !op) av.push(`Option not recognized in "${v.nome}" (${x.opcion}).`);
     n.vent.push(op ? { id: v.id, c, o: op } : { id: v.id, c });
   }
@@ -392,17 +396,21 @@ function importarAntigo(o: any): string[] {
     n.at[k] = clamp((o.caracteristicas?.[i] ?? 5) - rAt(k) - d, 1, 20);
   });
   for (const h of o.allHabilidades ?? []) {
-    const k = ESP[h.habilidad] ?? L.sk[h.habilidad], pd = Number(h.PDinvertidos) || 0;
+    const k = ESP[h.habilidad] ?? L.sk[h.habilidad], pd = (Number(h.PDinvertidos) || 0) + (Number(h.PDinvertidosPrevios) || 0);
     const st = ['act', 'reg', 'via'].includes(k) || k?.startsWith('ki_') || k?.startsWith('acu_') ? 1 : 5;
     if (k && pd && preco(k) > 0) n.pts[k] = Math.round(pd / preco(k) / st) * st;
   }
-  const vm = o['Múltiplos de vida']?.PDinvertidos; if (vm && K().vidaMult) n.vida = Math.round(vm / K().vidaMult);
+  const vm = (o['Múltiplos de vida']?.PDinvertidos || 0) + (o['Múltiplos de vida']?.PDinvertidosPrevios || 0); if (vm && K().vidaMult) n.vida = Math.round(vm / K().vidaMult);
   for (const b of o.bonificadoresNaturales ?? []) for (const f of ['fisico', 'mental', 'extra']) { const id = L.sk[b?.[f]]; if (id) n.nat[id] = (n.nat[id] || 0) + 1; }
   for (const e of o.elan ?? []) {
     const g = elanData.find(x => x.id === e.nombre);
     if (!g) { av.push(`Elan not recognized: ${e.nombre}.`); continue; }
     n.elan[g.nome] = Number(e.sincronizacion) || 0;
     for (const d of e.dones ?? []) { const id = typeof d === 'string' ? d : d.nombre; if (g.dons.some(x => x.id === id)) n.dons.push(id); else av.push(`Elan gift not recognized: ${id}.`); }
+  }
+  for (const id of dadosElan) {
+    const g = elanData.find(x => x.dons.some(d => d.id === id));
+    if (g && !n.dons.includes(id)) n.dons.push(id); else if (!g) av.push(`Elan gift/power not found: ${id}.`);
   }
   for (const v of o.viasMagia ?? []) {
     const id = L.vias[v.via] ?? v.via;
@@ -464,6 +472,7 @@ app.addEventListener('click', e => {
   else if (act === 'eadd') { const [tp, id] = k.split(':'); s.eq.push({ t: tp, id }); }
   else if (act === 'edel') s.eq.splice(Number(k), 1);
   else if (act === 'ewear') s.eq[Number(k)].w = !s.eq[Number(k)].w;
+  else if (act === 'pcx') s.pcExtra = clamp(s.pcExtra + n, 0, 20);
   else if (act === 'vsub') vsub = k;
   else if (act === 'vdel') s.vent.splice(n === 0 ? Number(k) : 0, 1);
   else if (act === 'vadd') {
