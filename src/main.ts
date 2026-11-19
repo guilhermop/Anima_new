@@ -105,10 +105,13 @@ const todas = [...CMBK, ...MAGK, ...SOBRE.map(c => c[0]), ...SKS.map(h => h.id)]
 const dpGasto = () => gasto(todas) + s.vida * K().vidaMult;
 const dpLivre = () => total() - dpGasto();
 const limCmb = () => Math.floor(K().limCombate * total());
-const final = (k: string, atr: string) => (s.pts[k] || 0) + bonus(A(atr)) + ((C().inato as Record<string, number>)[k] ?? 0) * s.nivel;
+const final = (k: string, atr: string) => (s.pts[k] || 0) + bonus(A(atr)) + inato(k);
 const kiTotal = () => KIA.reduce((a, [k]) => a + kiBase(A(k)) + (s.pts['ki_' + k] || 0), 0);
 const acuTotal = () => KIA.reduce((a, [k]) => a + acuBase(A(k)) + (s.pts['acu_' + k] || 0), 0);
-const inato = (k: string) => ((C().inato as Record<string, number>)[k] ?? 0) * s.nivel;
+const ventInato = (k: string) => s.vent.reduce((a, x) => a + (ef(x) === 'usoDeArmadura' && k === 'arm' ? 5 * x.c * s.nivel : ef(x) === 'sentidoDelCombate' && x.o === k ? 5 * s.nivel : ef(x) === 'naturalezaMagica' && k === 'zeon' ? 50 * x.c * s.nivel : ef(x) === 'aprendizajeMagicoGradual' && k === 'via' ? 5 * s.nivel : 0), 0);
+const inato = (k: string) => ((C().inato as Record<string, number>)[k] ?? 0) * s.nivel + ventInato(k);
+const riqueza = () => s.vent.reduce((a, x) => a + (ef(x) === 'fondosIniciales' ? ({ 1: 2000, 2: 5000, 3: 10000 } as Record<number, number>)[x.c] * 100 : 0), 0);
+const natTA = (k: number) => s.vent.reduce((a, x) => a + (ef(x) === 'armaduraNatural' ? [2, 2, 2, 2, 2, 2, 0][k] : ef(x) === 'armaduraMistica' ? [0, 0, 0, 0, 0, 0, 4][k] : 0), 0);
 const actFinal = () => actBase(A('pod')) + (s.pts.act || 0) + inato('act');
 const finalMag = (k: string, atr: string) => {
   const p = s.pts[k] || 0;
@@ -138,7 +141,7 @@ const resist = (r: string, a: string) => {
   return s.vent.some(x => HALF[vById(x.id).ef] === r) ? Math.floor(v / 2) : v;
 };
 const regen = () => REGEN[A('con') - 1] + rReg() + s.vent.reduce((t, x) => t + (vById(x.id).ef === 'aumentaRegeneracion' ? vById(x.id).efv : 0), 0);
-const APLICA = new Set(['sumarUnoAUnaCaracteristica', 'restarDosAUnaCaracteristica', 'cambiarUnaCaracteristicaPorNueve', 'aumentaRegeneracion', ...Object.keys(EXC), ...Object.keys(HALF), 'reflejosRapidos', 'reaccionLenta', 'aprendizajeInnato', 'aprendizajeInnatoCampo', 'conocedorTodasMaterias', 'habilidoso', 'aptoEnUnCampo', 'aptoEnUnaMateria', 'sinBonificadorNatural', 'bonificadorNaturalIncrementado']);
+const APLICA = new Set(['sumarUnoAUnaCaracteristica', 'restarDosAUnaCaracteristica', 'cambiarUnaCaracteristicaPorNueve', 'aumentaRegeneracion', ...Object.keys(EXC), ...Object.keys(HALF), 'reflejosRapidos', 'reaccionLenta', 'dificilDeMatar', 'usoDeArmadura', 'sentidoDelCombate', 'naturalezaMagica', 'aprendizajeMagicoGradual', 'sentidosAgudos', 'fondosIniciales', 'armaduraNatural', 'armaduraMistica', 'aprendizajeInnato', 'aprendizajeInnatoCampo', 'conocedorTodasMaterias', 'habilidoso', 'aptoEnUnCampo', 'aptoEnUnaMateria', 'sinBonificadorNatural', 'bonificadorNaturalIncrementado']);
 const RZ = () => racas.find(r => r.id === s.raca);
 const sum = (f: (x: (typeof racas)[number]['tr'][number]) => number) => RZ()?.tr.reduce((a, x) => a + f(x), 0) ?? 0;
 const rAt = (k: string) => sum(x => (x.at as unknown as Record<string, number>)[k] || 0);
@@ -173,7 +176,7 @@ type Item = { id: string; n: string; p: number[]; w: number; d: string; [k: stri
 const catalogo = (t: string) => (t === 'a' ? equip.armas : t === 'r' ? equip.armaduras : equip.equipos) as unknown as Item[];
 const itemDe = (x: { t: string; id: string }) => catalogo(x.t).find(i => i.id === x.id)!;
 const cobre = (p: number[]) => p[0] * 100 + p[1] * 10 + p[2];
-const saldo = () => cobre(s.ouro) - s.eq.reduce((a, x) => a + cobre(itemDe(x).p), 0);
+const saldo = () => cobre(s.ouro) + riqueza() - s.eq.reduce((a, x) => a + cobre(itemDe(x).p), 0);
 const fmt = (c: number) => `${c < 0 ? '-' : ''}${Math.floor(Math.abs(c) / 100)}g ${Math.floor((Math.abs(c) % 100) / 10)}s ${Math.abs(c) % 10}c`;
 const TIPOS = ['Cut', 'Impact', 'Thrust', 'Heat', 'Electricity', 'Cold', 'Energy'];
 const GRUPOS_EQ: Record<string, string> = { animales: 'Animals', calzado: 'Footwear', decoracion: 'Decoration', embarcaciones: 'Boats', orfebreria: 'Goldsmithing', raciones: 'Rations', transporte: 'Transport', varios: 'Miscellaneous', venenos: 'Poisons', vestimenta: 'Clothing', vivienda: 'Housing' };
@@ -190,11 +193,11 @@ const customUI = () => `<datalist id="tipos-mag">${TIPOS_MAG.map(x => `<option v
 const skById = (id: string) => SKS.find(h => h.id === id)!;
 const SKN: Record<string, string> = Object.fromEntries(SKS.map(h => [h.id, h.nome]));
 const CATN: Record<string, string> = Object.fromEntries(SEC);
-const OPC = (l: string): [string, string][] | null => (l === 'LISTA_CARACTERISTICAS' ? ATTRS : l === 'LISTA_HABILIDADES_SECUNDARIAS' ? SKS.map(h => [h.id, h.nome]) : l === 'LISTA_TIPOS_SECUNDARIAS' ? SEC : null);
+const OPC = (l: string): [string, string][] | null => (l === 'LISTA_CARACTERISTICAS' ? ATTRS : l === 'LISTA_HABILIDADES_SECUNDARIAS' ? SKS.map(h => [h.id, h.nome]) : l === 'LISTA_TIPOS_SECUNDARIAS' ? SEC : l === 'LISTA_HABILIDAD_COMBATE' ? [['atk', 'Attack'], ['par', 'Block'], ['esq', 'Dodge']] : null);
 const ef = (x: Vent) => vById(x.id).ef;
 const semNat = () => s.vent.some(x => ef(x) === 'sinBonificadorNatural');
 const extraNat = () => s.vent.some(x => ef(x) === 'bonificadorNaturalIncrementado');
-const bonusVant = (h: (typeof SKS)[number]) => s.vent.reduce((t, x) => t + (ef(x) === 'aprendizajeInnato' && x.o === h.id ? 10 * x.c : ef(x) === 'aprendizajeInnatoCampo' && x.o === h.g ? (x.c === 2 ? 5 : 10) : ef(x) === 'conocedorTodasMaterias' ? 10 : ef(x) === 'habilidoso' && h.id === 'HB_TRUCOS_MANOS' ? 30 : 0), 0);
+const bonusVant = (h: (typeof SKS)[number]) => s.vent.reduce((t, x) => t + (ef(x) === 'aprendizajeInnato' && x.o === h.id ? 10 * x.c : ef(x) === 'aprendizajeInnatoCampo' && x.o === h.g ? (x.c === 2 ? 5 : 10) : ef(x) === 'conocedorTodasMaterias' ? 10 : ef(x) === 'habilidoso' && h.id === 'HB_TRUCOS_MANOS' ? 30 : ef(x) === 'sentidosAgudos' && (h.id === 'HB_ADVERTIR' || h.id === 'HB_BUSCAR') ? (s.raca === 'RAZA_TUAN_DALYR' ? 40 : 30) : 0), 0);
 const reducao = (h: (typeof SKS)[number]) => s.vent.reduce((t, x) => t + (ef(x) === 'aptoEnUnCampo' && x.o === h.g ? 1 : ef(x) === 'aptoEnUnaMateria' && x.o === h.id ? x.c : 0), 0);
 const precoSk = (h: (typeof SKS)[number]) => Math.max(1, K()[h.g] - reducao(h));
 const fisico = (h: (typeof SKS)[number]) => ['agi', 'con', 'des', 'for'].includes(h.a);
@@ -202,7 +205,7 @@ const natUso = () => { let f = 0, m = 0; for (const h of SKS) { const c = s.nat[
 const natOk = () => natUso().sobra <= (extraNat() ? s.nivel : 0);
 const skFinal = (h: (typeof SKS)[number]) => (s.pts[h.id] || 0) + bonus(A(h.a)) * (1 + (semNat() ? 0 : s.nat[h.id] || 0)) + bonusVant(h);
 const pcLivres = () => pcs(s.vent).g;
-const pv = () => 20 + 10 * A('con') + bonus(A('con')) + s.nivel * K().vidaNivel + s.vida * A('con');
+const pv = () => 20 + 10 * A('con') + bonus(A('con')) + s.nivel * K().vidaNivel + s.vida * A('con') + s.vent.reduce((a, x) => a + (ef(x) === 'dificilDeMatar' ? 10 * x.c * s.nivel : 0), 0);
 const turnoVent = () => s.vent.reduce((a, x) => a + (ef(x) === 'reflejosRapidos' ? (x.c === 1 ? 25 : x.c === 2 ? 45 : 60) : ef(x) === 'reaccionLenta' ? 30 * x.c : 0), 0);
 const ini = () => 20 + bonus(A('agi')) + bonus(A('des')) + s.nivel * K().turnoNivel + turnoVent();
 
@@ -221,7 +224,7 @@ const attrCard = (k: string, n: string, edit: boolean) => {
 };
 const gridAttrs = (edit: boolean) => `<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">${ATTRS.map(([k, n]) => attrCard(k, n, edit)).join('')}</div>`;
 const vazio = (txt: string) => `<p class="text-sm text-slate-500">${txt}</p>`;
-const optLabel = (o?: string) => (o ? ` (${ATTRS.find(a => a[0] === o)?.[1] ?? SKN[o] ?? CATN[o] ?? o})` : '');
+const optLabel = (o?: string) => (o ? ` (${ATTRS.find(a => a[0] === o)?.[1] ?? SKN[o] ?? CATN[o] ?? ({ atk: 'Attack', par: 'Block', esq: 'Dodge' } as Record<string, string>)[o] ?? o})` : '');
 function folha(): string {
   const raca = RZ()?.nome ?? '-';
   const cab = `<div class="flex items-center gap-4"><div class="h-20 w-20 shrink-0 overflow-hidden rounded-full bg-slate-800 ring-2 ring-amber-500/60">${s.avatar ? `<img src="${s.avatar}" class="h-full w-full object-cover" alt="Character portrait">` : `<div class="flex h-full w-full items-center justify-center text-slate-500">${ico('user', 'h-10 w-10')}</div>`}</div><div class="min-w-0"><div class="font-serif text-xl font-bold text-amber-400">${esc(s.nome) || 'Unnamed character'}</div><div class="text-sm text-slate-400">${raca} · ${C().nome} · Level ${s.nivel}</div>${s.avatar ? '<button data-act="avatardel" class="mt-1 text-xs text-slate-500 underline print:hidden">Remove portrait</button>' : '<button data-act="avatar" class="mt-1 text-xs text-slate-500 underline print:hidden">Add portrait</button>'}</div></div>`;
@@ -281,7 +284,7 @@ function painel(): string {
   }
   if (tab === 'eq') {
     const q = busca.toLowerCase(), mon = s.eq.map((x, i) => ({ x, i, it: itemDe(x) }));
-    const vest = mon.filter(m => m.x.t === 'r' && m.x.w).map(m => m.it), ta = TIPOS.map((_, k) => vest.reduce((a, v) => a + (v.ta[k] || 0), 0));
+    const vest = mon.filter(m => m.x.t === 'r' && m.x.w).map(m => m.it), ta = TIPOS.map((_, k) => vest.reduce((a, v) => a + (v.ta[k] || 0), 0) + natTA(k));
     const armaEf = final('arm', 'for');
     const dono = mon.map(({ x, i, it }) => row(`${it.n}${x.t === 'r' && x.w ? ' <span class="rounded bg-emerald-900/60 px-1.5 text-[10px] text-emerald-300">worn</span>' : ''}`,
       `<div class="flex items-center gap-2">${x.t === 'r' ? `<button data-act="ewear" data-k="${i}" class="rounded bg-slate-800 px-2 py-1 text-xs text-amber-300">${x.w ? 'Take off' : 'Wear'}</button>` : ''}<button data-act="edel" data-k="${i}" class="${BT}">×</button></div>`,
@@ -291,8 +294,8 @@ function painel(): string {
     const grupos = [...new Set(cat.map(gname))].sort();
     const lista = grupos.map(g => `<details data-g="eq:${esub}:${g}" class="rounded-lg bg-slate-900/50 px-3" ${open.has(`eq:${esub}:${g}`) || q ? 'open' : ''}><summary class="cursor-pointer py-2 text-amber-300">${g}</summary>${cat.filter(i => gname(i) === g).map(i => `<div data-n="${i.n.toLowerCase()}" class="flex items-center justify-between gap-3 border-t border-slate-800 py-2 ${q && !i.n.toLowerCase().includes(q) ? 'hidden' : ''}"><div><div class="text-sm">${i.n}</div><div class="text-xs text-slate-500">${fmt(cobre(i.p))}, ${i.w} kg${infoEq(esub, i) ? ', ' + infoEq(esub, i) : ''}</div></div><button data-act="eadd" data-k="${esub}:${i.id}" class="rounded bg-slate-800 px-3 py-1 text-sm text-amber-300 hover:bg-amber-500 hover:text-slate-950">Buy</button></div>`).join('')}</details>`).join('');
     const kg = mon.reduce((a, m) => a + m.it.w, 0);
-    return card('Money', `<div class="flex flex-wrap items-center gap-3 text-sm">${['gold', 'silver', 'copper'].map((n, k) => `<label class="flex items-center gap-1">${n}<input type="number" min="0" data-f="ouro" data-k="${k}" value="${s.ouro[k]}" class="w-20 rounded bg-slate-900 px-2 py-1 text-right ring-1 ring-slate-700"></label>`).join('')}<span class="${saldo() < 0 ? 'text-red-400' : 'text-amber-300'}">Balance: <b class="font-mono">${fmt(saldo())}</b></span><span class="text-slate-500">1 gold = 10 silver = 100 copper</span></div>`) +
-      card('Your items', (dono || vazio('Nothing bought yet.')) + (mon.length ? `<p class="mt-2 text-sm text-slate-400">Total weight: ${Math.round(kg * 10) / 10} kg${vest.length ? `. Worn protection: ${TIPOS.map((n, k) => `${n} ${ta[k]}`).join(', ')}. Natural penalty ${vest.reduce((a, v) => a + v.pn, 0)}, movement restriction ${vest.reduce((a, v) => a + v.rm, 0)}.` : ''}</p>` : '')) +
+    return card('Money', `<div class="flex flex-wrap items-center gap-3 text-sm">${['gold', 'silver', 'copper'].map((n, k) => `<label class="flex items-center gap-1">${n}<input type="number" min="0" data-f="ouro" data-k="${k}" value="${s.ouro[k]}" class="w-20 rounded bg-slate-900 px-2 py-1 text-right ring-1 ring-slate-700"></label>`).join('')}<span class="${saldo() < 0 ? 'text-red-400' : 'text-amber-300'}">Balance: <b class="font-mono">${fmt(saldo())}</b></span><span class="text-slate-500">1 gold = 10 silver = 100 copper</span>${riqueza() ? `<span class="text-emerald-400">+${fmt(riqueza())} from Starting Wealth</span>` : ''}</div>`) +
+      card('Your items', (dono || vazio('Nothing bought yet.')) + (mon.length || TIPOS.some((_, k) => natTA(k)) ? `<p class="mt-2 text-sm text-slate-400">Total weight: ${Math.round(kg * 10) / 10} kg${vest.length || TIPOS.some((_, k) => natTA(k)) ? `. Worn protection: ${TIPOS.map((n, k) => `${n} ${ta[k]}`).join(', ')}. Natural penalty ${vest.reduce((a, v) => a + v.pn, 0)}, movement restriction ${vest.reduce((a, v) => a + v.rm, 0)}.` : ''}</p>` : '')) +
       `<div class="flex gap-2">${sub.map(([k, n]) => `<button data-act="esub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${esub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}${esub === 'c' ? '' : `<input data-q value="${busca}" placeholder="Search..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500">`}</div>${esub === 'c' ? `<div class="space-y-4">${customUI()}</div>` : `<div class="space-y-2">${lista}</div>`}`;
   }
   if (tab === 'vant') {
@@ -386,7 +389,7 @@ function importarAntigo(o: any): string[] {
     if (!v) { av.push(`Advantage/disadvantage not found: ${x.ventaja}.`); continue; }
     const c = v.custos.includes(x.pc) ? x.pc : v.custos.includes(-x.pc) ? -x.pc : v.custos[0];
     const godOp = elanData.find(g => g.id === x.opcion)?.nome;
-    const op = godOp ?? (v.lista === 'LISTA_CARACTERISTICAS' ? ATK[x.opcion] : v.lista === 'LISTA_HABILIDADES_SECUNDARIAS' ? L.sk[x.opcion] : v.lista === 'LISTA_TIPOS_SECUNDARIAS' ? L.tipos[x.opcion] : undefined);
+    const op = godOp ?? (v.lista === 'LISTA_CARACTERISTICAS' ? ATK[x.opcion] : v.lista === 'LISTA_HABILIDAD_COMBATE' ? ESP[x.opcion] : v.lista === 'LISTA_HABILIDADES_SECUNDARIAS' ? L.sk[x.opcion] : v.lista === 'LISTA_TIPOS_SECUNDARIAS' ? L.tipos[x.opcion] : undefined);
     if (v.lista && !op) av.push(`Option not recognized in "${v.nome}" (${x.opcion}).`);
     n.vent.push(op ? { id: v.id, c, o: op } : { id: v.id, c });
   }
@@ -419,7 +422,7 @@ function importarAntigo(o: any): string[] {
   }
   const add = (t: string, lista: any[], campo: string, vest = false) => { for (const x of lista ?? []) { const id = x[campo]; if (catalogo(t).some(i => i.id === id)) n.eq.push({ t, id, ...(vest && x.equipado ? { w: true } : {}) }); else av.push(`Item not found: ${id}.`); } };
   add('a', o.armas, 'arma'); add('r', o.armaduras, 'armadura', true); add('e', o.equipoComprado, 'equipoComprado');
-  const rest = ((o.dinero?.oro || 0) * 100) + ((o.dinero?.plata || 0) * 10) + (o.dinero?.cobre || 0), tot = rest + n.eq.reduce((a, x) => a + cobre(itemDe(x).p), 0);
+  const rest = ((o.dinero?.oro || 0) * 100) + ((o.dinero?.plata || 0) * 10) + (o.dinero?.cobre || 0), tot = Math.max(0, rest + n.eq.reduce((a, x) => a + cobre(itemDe(x).p), 0) - riqueza());
   n.ouro = [Math.floor(tot / 100), Math.floor((tot % 100) / 10), tot % 10];
   for (const k of ['tecnicasKi', 'artesMarciales', 'disciplinasPsiquicas', 'arsMagnus', 'conjurosSueltos', 'esferasMetamagicas']) if (o[k]?.length) av.push(`Not imported (does not exist in the new system yet): ${k}.`);
   s = n;
