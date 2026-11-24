@@ -88,6 +88,7 @@ The light theme works by overriding the Tailwind color variables in `src/style.c
 - Not implemented yet: loose spells, subpaths, metamagic, psychic disciplines, Ki techniques, martial arts and creature archetypes.
 - Some racial traits have no description in the source data (for example parts of Devah and Devah Nephilim).
 - Magic items are notes only: their quality bonus does not change any sheet number.
+- Game data is in English, translated from the original Spanish where no English existed.
 
 ## Credits and legal
 

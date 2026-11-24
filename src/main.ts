@@ -37,6 +37,7 @@ import elanData from './elan.json';
 import magia from './magia.json';
 import equip from './equip.json';
 import legado from './legacy.json';
+import elanfx from './elanfx.json';
 const SKS = habs as { id: string; nome: string; g: string; a: string }[];
 
 const ICONS: Record<string, string> = { 'chevron-left': ic_chevron_left, 'chevron-right': ic_chevron_right, 'scroll-text': ic_scroll_text, 'dumbbell': ic_dumbbell, 'users': ic_users, 'swords': ic_swords, 'flame': ic_flame, 'sparkles': ic_sparkles, 'route': ic_route, 'brain': ic_brain, 'badge-plus': ic_badge_plus, 'backpack': ic_backpack, 'graduation-cap': ic_graduation_cap, 'moon-star': ic_moon_star, 'user': ic_user, 'sun': ic_sun, 'moon': ic_moon, 'printer': ic_printer, 'download': ic_download, 'upload': ic_upload, 'rotate-ccw': ic_rotate_ccw, 'coins': ic_coins, 'shield': ic_shield, 'scale': ic_scale, 'package-open': ic_package_open };
@@ -63,8 +64,8 @@ const acuBase = (v: number) => (v <= 9 ? 1 : v <= 12 ? 2 : v <= 15 ? 3 : 4);
 const TABS: [string, string][] = [['sheet', 'Sheet'], ['atr', 'Attributes'], ['raca', 'Race'], ['cmb', 'Combat'], ['ki', 'Ki'], ['mag', 'Magic'], ['via', 'Paths'], ['sob', 'Psychic'], ['vant', 'Advantages'], ['eq', 'Equipment'], ['sec', 'Secondary'], ['elan', 'Elan']];
 
 interface Vent { id: string; c: number; o?: string }
-interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[]; avatar: string; pcExtra: number }
-const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [], avatar: '', pcExtra: 0 });
+interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[]; avatar: string; pcExtra: number; donOpt: Record<string, string> }
+const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [], avatar: '', pcExtra: 0, donOpt: {} });
 const KEY = 'anima-forge';
 let s: State = { ...novo(), ...JSON.parse(localStorage.getItem(KEY) || '{}') };
 let tab = 'sheet', lastTab = '', vsub = 'v', busca = '', esub = 'a';
@@ -122,7 +123,7 @@ const finalMag = (k: string, atr: string) => {
   return p + bonus(A(atr)) + inato(k);
 };
 const A = (k: string) => {
-  let v = s.at[k] + rAt(k);
+  let v = s.at[k] + rAt(k) + fxAt(k);
   for (const x of s.vent) {
     if (x.o !== k) continue;
     const e = vById(x.id).ef;
@@ -130,6 +131,7 @@ const A = (k: string) => {
     else if (e === 'restarDosAUnaCaracteristica') v -= 2;
     else if (e === 'cambiarUnaCaracteristicaPorNueve') v = 9;
   }
+  if (s.dons.some(d => FX[d]?.divinity)) v = Math.max(v, 10 + rAt(k));
   return clampN(v);
 };
 const REST: [string, string, string][] = [['RF', 'Physical', 'con'], ['RE', 'Disease', 'con'], ['RV', 'Poison', 'con'], ['RM', 'Magic', 'pod'], ['RP', 'Psychic', 'von']];
@@ -137,7 +139,7 @@ const EXC: Record<string, string[]> = { resistenciaFisicaExcepcional: ['RF', 'RE
 const HALF: Record<string, string> = { saludEnfermiza: 'RE', vulnerabilidadMagia: 'RM', debilidadFisica: 'RF', vulnerabilidadVenenos: 'RV' };
 const REGEN = [0, 0, 1, 1, 1, 1, 1, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12];
 const resist = (r: string, a: string) => {
-  const v = 30 + 5 * (s.nivel - 1) + bonus(A(a)) + rRes(r) + s.vent.reduce((t, x) => t + (EXC[vById(x.id).ef]?.includes(r) ? 25 * x.c : 0), 0);
+  const v = 30 + 5 * (s.nivel - 1) + bonus(A(a)) + rRes(r) + fxRes(r) + s.vent.reduce((t, x) => t + (EXC[vById(x.id).ef]?.includes(r) ? 25 * x.c : 0), 0);
   return s.vent.some(x => HALF[vById(x.id).ef] === r) ? Math.floor(v / 2) : v;
 };
 const regen = () => REGEN[A('con') - 1] + rReg() + s.vent.reduce((t, x) => t + (vById(x.id).ef === 'aumentaRegeneracion' ? vById(x.id).efv : 0), 0);
@@ -158,6 +160,7 @@ const elMotivo = (g: EG, d: ED) => {
 };
 const rmDon = (id: string) => {
   s.dons = s.dons.filter(x => x !== id);
+  delete s.donOpt[id];
   for (const g of elanData) for (const d of g.dons) if (d.req.includes(id) && s.dons.includes(d.id)) rmDon(d.id);
 };
 const NMAX = 80;
@@ -180,7 +183,7 @@ const saldo = () => cobre(s.ouro) + riqueza() - s.eq.reduce((a, x) => a + cobre(
 const fmt = (c: number) => `${c < 0 ? '-' : ''}${Math.floor(Math.abs(c) / 100)}g ${Math.floor((Math.abs(c) % 100) / 10)}s ${Math.abs(c) % 10}c`;
 const TIPOS = ['Cut', 'Impact', 'Thrust', 'Heat', 'Electricity', 'Cold', 'Energy'];
 const GRUPOS_EQ: Record<string, string> = { animales: 'Animals', calzado: 'Footwear', decoracion: 'Decoration', embarcaciones: 'Boats', orfebreria: 'Goldsmithing', raciones: 'Rations', transporte: 'Transport', varios: 'Miscellaneous', venenos: 'Poisons', vestimenta: 'Clothing', vivienda: 'Housing' };
-const infoEq = (t: string, i: Item) => (t === 'a' ? `damage ${i.dm}${i.b ? ` +${bonus(A(i.b))}` : ''}, speed ${i.v >= 0 ? '+' : ''}${i.v}, STR ${i.fu}${i.f2 ? '/' + i.f2 : ''}, critical ${i.k.filter(Boolean).join('/')}${i.e.length ? ', ' + i.e.join(', ') : ''}` : t === 'r' ? `${i.l}, ${i.cl}, TA ${i.ta.join('/')}, requires armor ${i.rq}` : i.w ? `${i.w} kg` : '');
+const infoEq = (t: string, i: Item) => (t === 'a' ? `damage ${i.dm}${i.b || fxDano() ? ` +${(i.b ? bonus(A(i.b)) : 0) + fxDano()}` : ''}, speed ${i.v >= 0 ? '+' : ''}${i.v}, STR ${i.fu}${i.f2 ? '/' + i.f2 : ''}, critical ${i.k.filter(Boolean).join('/')}${i.e.length ? ', ' + i.e.join(', ') : ''}` : t === 'r' ? `${i.l}, ${i.cl}, TA ${i.ta.join('/')}, requires armor ${i.rq}` : i.w ? `${i.w} kg` : '');
 const esc = (x: string) => x.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const TIPOS_MAG = ['Weapon', 'Armor', 'Shield', 'Staff', 'Wand', 'Ring', 'Amulet', 'Cloak', 'Boots', 'Gloves', 'Helm', 'Belt', 'Orb', 'Tome', 'Other'];
 const FIELD = 'rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500';
@@ -190,6 +193,26 @@ const customUI = () => `<datalist id="tipos-mag">${TIPOS_MAG.map(x => `<option v
     <div class="flex items-center gap-2"><input data-f="cust" data-i="${i}" data-k="nome" value="${esc(c.nome)}" placeholder="Item name" class="${FIELD} min-w-0 flex-1 font-serif text-base! text-amber-300"><button data-act="cdel" data-k="${i}" class="${BT}" title="Delete item" aria-label="Delete item">×</button></div>
     <div class="mt-2 flex flex-wrap gap-2"><input data-f="cust" data-i="${i}" data-k="tipo" list="tipos-mag" value="${esc(c.tipo)}" placeholder="Type (weapon, staff...)" class="${FIELD} min-w-0 flex-1"><label class="flex items-center gap-2 text-sm text-slate-400">Quality<select data-f="cust" data-i="${i}" data-k="bonus" class="${FIELD}">${[0, 5, 10, 15].map(b => `<option value="${b}" ${b === c.bonus ? 'selected' : ''}>${b ? '+' + b : '0'}</option>`).join('')}</select></label></div>
     <textarea data-f="cust" data-i="${i}" data-k="desc" rows="4" placeholder="Abilities of the item..." class="${FIELD} mt-2 w-full">${esc(c.desc)}</textarea></section>`).join('') : '<p class="text-sm text-slate-500">No magic items yet.</p>');
+type Fx = { god: string; sk?: { id: string; div: number }[]; res?: { r: string; div: number }[]; dmg?: number; at?: Record<string, number>; divinity?: boolean; opt?: number; note?: string };
+const FX = elanfx as unknown as Record<string, Fx>;
+const donsFx = () => s.dons.filter(d => FX[d]);
+const syncDe = (godId: string) => s.elan[elanData.find(g => g.id === godId)?.nome ?? ''] || 0;
+const fxSkill = (h: { id: string; g: string }) => donsFx().reduce((a, d) => a + (FX[d].sk ?? []).reduce((b, x) => b + (x.id === h.id || (x.id === 'INT_ALL' && h.g === 'int') ? Math.floor(syncDe(FX[d].god) / x.div) : 0), 0), 0);
+const fxRes = (r: string) => donsFx().reduce((a, d) => a + (FX[d].res ?? []).reduce((b, x) => b + (x.r === r ? Math.floor(syncDe(FX[d].god) / x.div) : 0), 0), 0);
+const fxDano = () => donsFx().reduce((a, d) => a + (FX[d].dmg ? Math.floor(syncDe(FX[d].god) / FX[d].dmg!) : 0), 0);
+const fxAt = (k: string) => donsFx().reduce((a, d) => a + (FX[d].at?.[k] ?? 0) + (FX[d].opt && s.donOpt[d] === k ? FX[d].opt! : 0), 0);
+const fxInfo = (id: string, tem: boolean) => {
+  const f = FX[id]; if (!f) return '';
+  const sync = syncDe(f.god), p: string[] = [];
+  for (const x of f.sk ?? []) p.push(`${x.id === 'INT_ALL' ? 'All intellectual skills' : SKN[x.id]} +${Math.floor(sync / x.div)}`);
+  for (const x of f.res ?? []) p.push(`${REST.find(r => r[0] === x.r)?.[1]} resistance +${Math.floor(sync / x.div)}`);
+  if (f.dmg) p.push(`Damage +${Math.floor(sync / f.dmg)}`);
+  for (const [k, n] of Object.entries(f.at ?? {})) p.push(`${ATTRS.find(a => a[0] === k)?.[1]} +${n}`);
+  if (f.divinity) p.push('All attributes raised to 10 + racial bonus');
+  const sel = f.opt ? (tem ? `<select data-f="donopt" data-k="${id}" class="${FIELD} mt-1"><option value="">Choose an attribute (+${f.opt})</option>${ATTRS.map(([k, n]) => `<option value="${k}" ${s.donOpt[id] === k ? 'selected' : ''}>${n}</option>`).join('')}</select>` : '') : '';
+  if (f.opt && !tem) p.push(`+${f.opt} to one attribute of your choice`);
+  return `${p.length ? `<div class="text-xs text-emerald-400">On sheet: ${p.join(', ')}</div>` : ''}${f.note ? `<div class="text-xs text-amber-400">${f.note}</div>` : ''}${sel}`;
+};
 const skById = (id: string) => SKS.find(h => h.id === id)!;
 const SKN: Record<string, string> = Object.fromEntries(SKS.map(h => [h.id, h.nome]));
 const CATN: Record<string, string> = Object.fromEntries(SEC);
@@ -197,7 +220,7 @@ const OPC = (l: string): [string, string][] | null => (l === 'LISTA_CARACTERISTI
 const ef = (x: Vent) => vById(x.id).ef;
 const semNat = () => s.vent.some(x => ef(x) === 'sinBonificadorNatural');
 const extraNat = () => s.vent.some(x => ef(x) === 'bonificadorNaturalIncrementado');
-const bonusVant = (h: (typeof SKS)[number]) => s.vent.reduce((t, x) => t + (ef(x) === 'aprendizajeInnato' && x.o === h.id ? 10 * x.c : ef(x) === 'aprendizajeInnatoCampo' && x.o === h.g ? (x.c === 2 ? 5 : 10) : ef(x) === 'conocedorTodasMaterias' ? 10 : ef(x) === 'habilidoso' && h.id === 'HB_TRUCOS_MANOS' ? 30 : ef(x) === 'sentidosAgudos' && (h.id === 'HB_ADVERTIR' || h.id === 'HB_BUSCAR') ? (s.raca === 'RAZA_TUAN_DALYR' ? 40 : 30) : 0), 0);
+const bonusVant = (h: (typeof SKS)[number]) => fxSkill(h) + s.vent.reduce((t, x) => t + (ef(x) === 'aprendizajeInnato' && x.o === h.id ? 10 * x.c : ef(x) === 'aprendizajeInnatoCampo' && x.o === h.g ? (x.c === 2 ? 5 : 10) : ef(x) === 'conocedorTodasMaterias' ? 10 : ef(x) === 'habilidoso' && h.id === 'HB_TRUCOS_MANOS' ? 30 : ef(x) === 'sentidosAgudos' && (h.id === 'HB_ADVERTIR' || h.id === 'HB_BUSCAR') ? (s.raca === 'RAZA_TUAN_DALYR' ? 40 : 30) : 0), 0);
 const reducao = (h: (typeof SKS)[number]) => s.vent.reduce((t, x) => t + (ef(x) === 'aptoEnUnCampo' && x.o === h.g ? 1 : ef(x) === 'aptoEnUnaMateria' && x.o === h.id ? x.c : 0), 0);
 const precoSk = (h: (typeof SKS)[number]) => Math.max(1, K()[h.g] - reducao(h));
 const fisico = (h: (typeof SKS)[number]) => ['agi', 'con', 'des', 'for'].includes(h.a);
@@ -331,7 +354,7 @@ function painel(): string {
     const sync = s.elan[g.nome] || 0, gasto = elSpent(g);
     const dons = g.dons.map(d => {
       const tem = s.dons.includes(d.id), m = tem ? '' : elMotivo(g, d);
-      return `<div class="flex items-center justify-between gap-2 border-t border-slate-800 py-1.5 text-sm"><div><span class="${tem ? 'text-amber-300' : ''}">${d.nome}</span><div class="text-xs text-slate-500">cost ${d.c}, min. ${d.min}${d.req.length ? `, requires ${d.req.map(r => g.dons.find(x => x.id === r)?.nome ?? r).join(', ')}` : ''}</div></div><button data-act="edon" data-k="${d.id}" class="rounded px-3 py-1 ${tem ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-300 hover:bg-amber-500 hover:text-slate-950'} disabled:opacity-40" ${m ? `disabled title="${m}"` : ''}>${tem ? 'Remove' : 'Acquire'}</button></div>`;
+      return `<div class="flex items-center justify-between gap-2 border-t border-slate-800 py-1.5 text-sm"><div><span class="${tem ? 'text-amber-300' : ''}">${d.nome}</span><div class="text-xs text-slate-500">cost ${d.c}, min. ${d.min}${d.req.length ? `, requires ${d.req.map(r => g.dons.find(x => x.id === r)?.nome ?? r).join(', ')}` : ''}</div>${fxInfo(d.id, tem)}</div><button data-act="edon" data-k="${d.id}" class="rounded px-3 py-1 ${tem ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-300 hover:bg-amber-500 hover:text-slate-950'} disabled:opacity-40" ${m ? `disabled title="${m}"` : ''}>${tem ? 'Remove' : 'Acquire'}</button></div>`;
     }).join('');
     return `<details data-g="elan:${g.nome}" class="rounded-lg bg-slate-900/50 px-3" ${open.has('elan:' + g.nome) ? 'open' : ''}><summary class="flex cursor-pointer items-center justify-between py-2"><span class="text-amber-300">${g.nome}</span><span class="font-mono text-xs text-slate-400">${sync ? `${sync - gasto}/${sync} free` : 'no Elan'}</span></summary>${row('Synchronization', step('elan', g.nome, sync, 5), 'minimum = already spent on gifts')}${dons}</details>`;
   }).join('<div class="h-2"></div>'));
@@ -376,14 +399,14 @@ for (const [k, n] of [['Agilidad', 'agi'], ['Constitución', 'con'], ['Destreza'
 const ATK: Record<string, string> = { AGI: 'agi', CON: 'con', DES: 'des', FUE: 'for', INT: 'int', PER: 'per', POD: 'pod', VOL: 'von' };
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function importarAntigo(o: any): string[] {
-  const av: string[] = [], n = novo(), L = legado as unknown as Record<string, Record<string, string>>, OPC = (legado as unknown as { origenPC: string[] }).origenPC, dadosElan: string[] = [];
+  const av: string[] = [], n = novo(), L = legado as unknown as Record<string, Record<string, string>>, OPC = (legado as unknown as { origenPC: string[] }).origenPC, dadosElan: string[] = [], opcoesElan: Record<string, string> = {};
   const cl = classes.find(c => (c as { cat?: string }).cat === o.categoria);
   if (cl) n.classe = cl.id; else av.push(`Class not recognized (${o.categoria}); using ${C().nome}.`);
   n.pcExtra = (o.aumentosCaracteristicas ?? []).filter((a: any) => a.estado === 'gastado' && a.uso === 'PC').length;
   n.nome = o.nombre || ''; n.nivel = clamp(Number(o.nivel) || 1, 1, 30); n.sexo = o.sexo === 'Mujer' ? 'm' : 'h';
   if (racas.some(r => r.id === o.raza)) n.raca = o.raza; else av.push(`Race not recognized (${o.raza}).`);
   for (const x of [...(o.ventajas ?? []), ...(o.desventajas ?? [])]) {
-    if (typeof x.ventaja === 'string' && x.ventaja.startsWith('ELAN_VENTAJA_')) { dadosElan.push(L.elanGrant[x.ventaja] ?? x.ventaja); continue; }
+    if (typeof x.ventaja === 'string' && x.ventaja.startsWith('ELAN_VENTAJA_')) { dadosElan.push(L.elanGrant[x.ventaja] ?? x.ventaja); if (ATK[x.opcion]) opcoesElan[L.elanGrant[x.ventaja] ?? x.ventaja] = ATK[x.opcion]; continue; }
     if (!OPC.includes(x.origen)) continue;
     const v = vantagens.find(y => y.id === (L.vent[x.ventaja] ?? x.ventaja));
     if (!v) { av.push(`Advantage/disadvantage not found: ${x.ventaja}.`); continue; }
@@ -415,6 +438,7 @@ function importarAntigo(o: any): string[] {
     const g = elanData.find(x => x.dons.some(d => d.id === id));
     if (g && !n.dons.includes(id)) n.dons.push(id); else if (!g) av.push(`Elan gift/power not found: ${id}.`);
   }
+  n.donOpt = opcoesElan;
   for (const v of o.viasMagia ?? []) {
     const id = L.vias[v.via] ?? v.via;
     if (magia.vias.some(x => x.id === id)) n.vias.push({ id, n: Number(v.nivel) || 0 }); else av.push(`Path not recognized: ${v.via}.`);
@@ -510,6 +534,7 @@ app.addEventListener('change', e => {
   else if (t.dataset.f === 'classe') s.classe = t.value;
   else if (t.dataset.f === 'raca') s.raca = t.value;
   else if (t.dataset.f === 'sexo') s.sexo = t.value;
+  else if (t.dataset.f === 'donopt') { if (t.value) s.donOpt[t.dataset.k!] = t.value; else delete s.donOpt[t.dataset.k!]; }
   else if (t.dataset.f === 'cust') {
     const c = s.custom[Number(t.dataset.i)], k = t.dataset.k as 'nome' | 'tipo' | 'bonus' | 'desc';
     if (c) { if (k === 'bonus') c.bonus = Number(t.value); else c[k] = t.value; save(); }
