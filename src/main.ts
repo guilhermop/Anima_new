@@ -64,8 +64,8 @@ const acuBase = (v: number) => (v <= 9 ? 1 : v <= 12 ? 2 : v <= 15 ? 3 : 4);
 const TABS: [string, string][] = [['sheet', 'Sheet'], ['atr', 'Attributes'], ['raca', 'Race'], ['cmb', 'Combat'], ['ki', 'Ki'], ['mag', 'Magic'], ['via', 'Paths'], ['sob', 'Psychic'], ['vant', 'Advantages'], ['eq', 'Equipment'], ['sec', 'Secondary'], ['elan', 'Elan']];
 
 interface Vent { id: string; c: number; o?: string }
-interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[]; avatar: string; pcExtra: number; donOpt: Record<string, string> }
-const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [], avatar: '', pcExtra: 0, donOpt: {} });
+interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[]; avatar: string; pcExtra: number; donOpt: Record<string, string>; natAb: string[][]; novel: string[][] }
+const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [], avatar: '', pcExtra: 0, donOpt: {}, natAb: [], novel: [] });
 const KEY = 'anima-forge';
 let s: State = { ...novo(), ...JSON.parse(localStorage.getItem(KEY) || '{}') };
 let tab = 'sheet', lastTab = '', vsub = 'v', busca = '', esub = 'a';
@@ -220,13 +220,23 @@ const OPC = (l: string): [string, string][] | null => (l === 'LISTA_CARACTERISTI
 const ef = (x: Vent) => vById(x.id).ef;
 const semNat = () => s.vent.some(x => ef(x) === 'sinBonificadorNatural');
 const extraNat = () => s.vent.some(x => ef(x) === 'bonificadorNaturalIncrementado');
-const bonusVant = (h: (typeof SKS)[number]) => fxSkill(h) + s.vent.reduce((t, x) => t + (ef(x) === 'aprendizajeInnato' && x.o === h.id ? 10 * x.c : ef(x) === 'aprendizajeInnatoCampo' && x.o === h.g ? (x.c === 2 ? 5 : 10) : ef(x) === 'conocedorTodasMaterias' ? 10 : ef(x) === 'habilidoso' && h.id === 'HB_TRUCOS_MANOS' ? 30 : ef(x) === 'sentidosAgudos' && (h.id === 'HB_ADVERTIR' || h.id === 'HB_BUSCAR') ? (s.raca === 'RAZA_TUAN_DALYR' ? 40 : 30) : 0), 0);
+const bonusVant = (h: (typeof SKS)[number]) => fxSkill(h) + s.vent.reduce((t, x) => t + (ef(x) === 'aprendizajeInnato' && x.o === h.id ? 10 * x.c * s.nivel : ef(x) === 'aprendizajeInnatoCampo' && x.o === h.g ? (x.c === 2 ? 5 : 10) * s.nivel : ef(x) === 'conocedorTodasMaterias' ? 10 : ef(x) === 'habilidoso' && h.id === 'HB_TRUCOS_MANOS' ? 30 * s.nivel : ef(x) === 'sentidosAgudos' && (h.id === 'HB_ADVERTIR' || h.id === 'HB_BUSCAR') ? (s.raca === 'RAZA_TUAN_DALYR' ? 40 : 30) : 0), 0);
 const reducao = (h: (typeof SKS)[number]) => s.vent.reduce((t, x) => t + (ef(x) === 'aptoEnUnCampo' && x.o === h.g ? 1 : ef(x) === 'aptoEnUnaMateria' && x.o === h.id ? x.c : 0), 0);
 const precoSk = (h: (typeof SKS)[number]) => Math.max(1, K()[h.g] - reducao(h));
 const fisico = (h: (typeof SKS)[number]) => ['agi', 'con', 'des', 'for'].includes(h.a);
 const natUso = () => { let f = 0, m = 0; for (const h of SKS) { const c = s.nat[h.id] || 0; if (fisico(h)) f += c; else m += c; } return { f, m, sobra: Math.max(0, f - s.nivel) + Math.max(0, m - s.nivel) }; };
 const natOk = () => natUso().sobra <= (extraNat() ? s.nivel : 0);
-const skFinal = (h: (typeof SKS)[number]) => (s.pts[h.id] || 0) + bonus(A(h.a)) * (1 + (semNat() ? 0 : s.nat[h.id] || 0)) + bonusVant(h);
+const ehNovel = () => (C() as { cat?: string }).cat === 'CAT_NOVEL';
+const natAbBonus = (h: (typeof SKS)[number]) => { let c = 0; for (let l = 0; l < s.nivel; l++) { c += (s.natAb[l] ?? []).filter(x => x === h.id).length; if (ehNovel()) c += (s.novel[l] ?? []).filter(x => x === h.id).length; } return 10 * c; };
+const skFinal = (h: (typeof SKS)[number]) => (s.pts[h.id] || 0) + bonus(A(h.a)) * (1 + (semNat() ? 0 : s.nat[h.id] || 0)) + bonusVant(h) + natAbBonus(h);
+const naCard = (tp: 'na' | 'nv', titulo: string, ajuda: string) => {
+  const arr = tp === 'na' ? s.natAb : s.novel;
+  return card(titulo, `<p class="mb-2 text-sm text-slate-400">${ajuda}</p>` + Array.from({ length: s.nivel }, (_, l) => {
+    const cur = arr[l] ?? [], key = `${tp}:${l + 1}`;
+    const sels = [0, 1, 2, 3, 4].map(i => `<select data-f="natab" data-t="${tp}" data-l="${l}" data-i="${i}" class="${FIELD} min-w-0" aria-label="${titulo}, level ${l + 1}, choice ${i + 1}"><option value="">-</option>${SKS.map(h => `<option value="${h.id}" ${cur[i] === h.id ? 'selected' : ''} ${cur.some((x, j) => x === h.id && j !== i) ? 'disabled' : ''}>${h.nome}</option>`).join('')}</select>`).join('');
+    return `<details data-g="${key}" class="rounded-lg bg-slate-900/50 px-3" ${open.has(key) ? 'open' : ''}><summary class="cursor-pointer py-2 text-amber-300">Level ${l + 1} <span class="text-xs text-slate-500">${cur.filter(Boolean).length}/5</span></summary><div class="grid grid-cols-1 gap-2 pb-2 sm:grid-cols-2">${sels}</div></details>`;
+  }).join('<div class="h-2"></div>'), 'sparkles');
+};
 const pcLivres = () => pcs(s.vent).g;
 const pv = () => 20 + 10 * A('con') + bonus(A('con')) + s.nivel * K().vidaNivel + s.vida * A('con') + s.vent.reduce((a, x) => a + (ef(x) === 'dificilDeMatar' ? 10 * x.c * s.nivel : 0), 0);
 const turnoVent = () => s.vent.reduce((a, x) => a + (ef(x) === 'reflejosRapidos' ? (x.c === 1 ? 25 : x.c === 2 ? 45 : 60) : ef(x) === 'reaccionLenta' ? 30 * x.c : 0), 0);
@@ -251,7 +261,7 @@ const optLabel = (o?: string) => (o ? ` (${ATTRS.find(a => a[0] === o)?.[1] ?? S
 function folha(): string {
   const raca = RZ()?.nome ?? '-';
   const cab = `<div class="flex items-center gap-4"><div class="h-20 w-20 shrink-0 overflow-hidden rounded-full bg-slate-800 ring-2 ring-amber-500/60">${s.avatar ? `<img src="${s.avatar}" class="h-full w-full object-cover" alt="Character portrait">` : `<div class="flex h-full w-full items-center justify-center text-slate-500">${ico('user', 'h-10 w-10')}</div>`}</div><div class="min-w-0"><div class="font-serif text-xl font-bold text-amber-400">${esc(s.nome) || 'Unnamed character'}</div><div class="text-sm text-slate-400">${raca} · ${C().nome} · Level ${s.nivel}</div>${s.avatar ? '<button data-act="avatardel" class="mt-1 text-xs text-slate-500 underline print:hidden">Remove portrait</button>' : '<button data-act="avatar" class="mt-1 text-xs text-slate-500 underline print:hidden">Add portrait</button>'}</div></div>`;
-  const hab = SKS.filter(h => (s.pts[h.id] || 0) > 0 || (s.nat[h.id] || 0) > 0).sort((a, b) => skFinal(b) - skFinal(a)).slice(0, 12);
+  const hab = SKS.filter(h => (s.pts[h.id] || 0) > 0 || (s.nat[h.id] || 0) > 0 || natAbBonus(h) > 0).sort((a, b) => skFinal(b) - skFinal(a)).slice(0, 12);
   const chips = (xs: string[], cls = '') => (xs.length ? `<div class="flex flex-wrap gap-1.5">${xs.map(x => `<span class="rounded-full bg-slate-900 px-2.5 py-1 text-xs ring-1 ring-slate-700 ${cls}">${x}</span>`).join('')}</div>` : vazio('None'));
   const mon = s.eq.map(x => ({ x, it: itemDe(x) }));
   const elanLista = elanData.map(g => ({ g, sync: s.elan[g.nome] || 0 })).filter(e => e.sync > 0);
@@ -345,9 +355,10 @@ function painel(): string {
   if (tab === 'sec') {
     const u = natUso();
     return card('Natural bonus', `<p class="text-sm ${natOk() ? 'text-slate-400' : 'text-red-400'}">${semNat() ? 'No natural bonus (disadvantage).' : `Physical ${u.f}/${s.nivel}, mental ${u.m}/${s.nivel}${extraNat() ? `, extra ${u.sobra}/${s.nivel}` : ''}. Each point adds the skill's attribute bonus again.`}</p>`) +
+      naCard('na', 'Natural Ability (+10)', 'Choose 5 different secondary abilities at each level. Each choice adds +10.') + (ehNovel() ? naCard('nv', 'Freelancer innate bonus (+10)', 'The Freelancer gets 5 more choices at each level, also +10 each.') : '') +
       SEC.map(([g, n]) => card(`${n} <span class="text-sm text-slate-500">${K()[g]} DP per point</span>`, SKS.filter(h => h.g === g).map(h => row(h.nome,
         `<div class="flex items-center gap-3"><div class="text-center"><div class="text-[10px] text-slate-500">pts</div>${step('pt', h.id, s.pts[h.id] || 0, 5)}</div>${semNat() ? '' : `<div class="text-center"><div class="text-[10px] text-slate-500">nat</div>${step('nat', h.id, s.nat[h.id] || 0)}</div>`}<span class="w-12 text-right font-mono text-amber-300">${skFinal(h)}</span></div>`,
-        `${ABR(h.a)} ${bonus(A(h.a)) >= 0 ? '+' : ''}${bonus(A(h.a))}${reducao(h) ? `, cost ${precoSk(h)} DP (reduced)` : ''}${bonusVant(h) ? `, advantages +${bonusVant(h)}` : ''}`)).join(''))).join('');
+        `${ABR(h.a)} ${bonus(A(h.a)) >= 0 ? '+' : ''}${bonus(A(h.a))}${reducao(h) ? `, cost ${precoSk(h)} DP (reduced)` : ''}${bonusVant(h) ? `, advantages +${bonusVant(h)}` : ''}${natAbBonus(h) ? `, natural ability +${natAbBonus(h)}` : ''}`)).join(''))).join('');
   }
   const soma = Object.values(s.elan).reduce((a, b) => a + b, 0);
   const col = (tipo: string) => card(tipo, elanData.filter(g => g.tipo === tipo).map(g => {
@@ -428,6 +439,8 @@ function importarAntigo(o: any): string[] {
   }
   const vm = (o['Múltiplos de vida']?.PDinvertidos || 0) + (o['Múltiplos de vida']?.PDinvertidosPrevios || 0); if (vm && K().vidaMult) n.vida = Math.round(vm / K().vidaMult);
   for (const b of o.bonificadoresNaturales ?? []) for (const f of ['fisico', 'mental', 'extra']) { const id = L.sk[b?.[f]]; if (id) n.nat[id] = (n.nat[id] || 0) + 1; }
+  for (const b of o.bonos ?? []) if (b.origen === 'ORIGEN_HABILIDAD_NATURAL' && b.nivel && L.sk[b.item]) { while (n.natAb.length < b.nivel) n.natAb.push(['', '', '', '', '']); n.natAb[b.nivel - 1][b.indice] = L.sk[b.item]; }
+  (o.bonoNovel ?? []).forEach((arr: string[] | null, lvl: number) => { if (!arr || lvl < 1) return; while (n.novel.length < lvl) n.novel.push(['', '', '', '', '']); arr.forEach((nm, i) => { if (L.sk[nm]) n.novel[lvl - 1][i] = L.sk[nm]; }); });
   for (const e of o.elan ?? []) {
     const g = elanData.find(x => x.id === e.nombre);
     if (!g) { av.push(`Elan not recognized: ${e.nombre}.`); continue; }
@@ -534,6 +547,11 @@ app.addEventListener('change', e => {
   else if (t.dataset.f === 'classe') s.classe = t.value;
   else if (t.dataset.f === 'raca') s.raca = t.value;
   else if (t.dataset.f === 'sexo') s.sexo = t.value;
+  else if (t.dataset.f === 'natab') {
+    const arr = t.dataset.t === 'na' ? s.natAb : s.novel, l = Number(t.dataset.l), i = Number(t.dataset.i);
+    while (arr.length <= l) arr.push(['', '', '', '', '']);
+    arr[l][i] = t.value;
+  }
   else if (t.dataset.f === 'donopt') { if (t.value) s.donOpt[t.dataset.k!] = t.value; else delete s.donOpt[t.dataset.k!]; }
   else if (t.dataset.f === 'cust') {
     const c = s.custom[Number(t.dataset.i)], k = t.dataset.k as 'nome' | 'tipo' | 'bonus' | 'desc';
