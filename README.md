@@ -91,6 +91,3 @@ The light theme works by overriding the Tailwind color variables in `src/style.c
 - Game data is in English.
 
 ## Credits and legal
-
-- Original generator: [Anima Unico](https://github.com/wwhere/animaunico), MIT License, copyright (c) 2013 Guillermo Heras Prieto and (c) 2014 wwhere. This project reuses its game data and rules logic. See [LICENSE](LICENSE).
-- *Anima: Beyond Fantasy* is copyright Anima Project Studio. The text describing game elements (advantages, races, gifts and so on) is copyright Edge Entertainment. This is an unofficial fan tool, and these rights remain with their owners.

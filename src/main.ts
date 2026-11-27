@@ -367,7 +367,7 @@ function painel(): string {
       const tem = s.dons.includes(d.id), m = tem ? '' : elMotivo(g, d);
       return `<div class="flex items-center justify-between gap-2 border-t border-slate-800 py-1.5 text-sm"><div><span class="${tem ? 'text-amber-300' : ''}">${d.nome}</span><div class="text-xs text-slate-500">cost ${d.c}, min. ${d.min}${d.req.length ? `, requires ${d.req.map(r => g.dons.find(x => x.id === r)?.nome ?? r).join(', ')}` : ''}</div>${fxInfo(d.id, tem)}</div><button data-act="edon" data-k="${d.id}" class="rounded px-3 py-1 ${tem ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-300 hover:bg-amber-500 hover:text-slate-950'} disabled:opacity-40" ${m ? `disabled title="${m}"` : ''}>${tem ? 'Remove' : 'Acquire'}</button></div>`;
     }).join('');
-    return `<details data-g="elan:${g.nome}" class="rounded-lg bg-slate-900/50 px-3" ${open.has('elan:' + g.nome) ? 'open' : ''}><summary class="flex cursor-pointer items-center justify-between py-2"><span class="text-amber-300">${g.nome}</span><span class="font-mono text-xs text-slate-400">${sync ? `${sync - gasto}/${sync} free` : 'no Elan'}</span></summary>${row('Synchronization', step('elan', g.nome, sync, 5), 'minimum = already spent on gifts')}${dons}</details>`;
+    return `<details data-g="elan:${g.nome}" class="rounded-lg bg-slate-900/50 px-3" ${open.has('elan:' + g.nome) ? 'open' : ''}><summary class="flex cursor-pointer items-center justify-between py-2"><span class="text-amber-300">${g.nome}</span><span class="font-mono text-xs text-slate-400">${sync ? `${sync - gasto}/${sync} free` : 'no Elan'}</span></summary>${row('Synchronization', `<div class="flex items-center gap-2"><button data-act="elan" data-k="${g.nome}" data-d="-1" class="${BT}" aria-label="Decrease ${g.nome} synchronization">−</button><input type="number" inputmode="numeric" min="${gasto}" max="100" step="1" data-f="elansync" data-k="${g.nome}" value="${sync}" class="${FIELD} w-20 text-center" aria-label="${g.nome} synchronization"><button data-act="elan" data-k="${g.nome}" data-d="1" class="${BT}" aria-label="Increase ${g.nome} synchronization">+</button></div>`, `type a value from ${gasto} to 100 (the minimum is what you already spent on gifts)`)}${dons}</details>`;
   }).join('<div class="h-2"></div>'));
   return `<div class="grid gap-4 md:grid-cols-2">${col('Beryl')}${col('Shajad')}</div><p class="mt-3 text-sm text-slate-400">Total synchronization: ${soma}. Gifts acquired: ${s.dons.length}.</p>`;
 }
@@ -551,6 +551,10 @@ app.addEventListener('change', e => {
     const arr = t.dataset.t === 'na' ? s.natAb : s.novel, l = Number(t.dataset.l), i = Number(t.dataset.i);
     while (arr.length <= l) arr.push(['', '', '', '', '']);
     arr[l][i] = t.value;
+  }
+  else if (t.dataset.f === 'elansync') {
+    const k = t.dataset.k!, g = elanData.find(x => x.nome === k)!;
+    s.elan[k] = clamp(Math.floor(Number(t.value)) || 0, elSpent(g), 100);
   }
   else if (t.dataset.f === 'donopt') { if (t.value) s.donOpt[t.dataset.k!] = t.value; else delete s.donOpt[t.dataset.k!]; }
   else if (t.dataset.f === 'cust') {
