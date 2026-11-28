@@ -1,4 +1,5 @@
 import './style.css';
+import ic_ghost from 'lucide-static/icons/ghost.svg?raw';
 import ic_chevron_left from 'lucide-static/icons/chevron-left.svg?raw';
 import ic_chevron_right from 'lucide-static/icons/chevron-right.svg?raw';
 import '@fontsource/inter/400.css';
@@ -40,9 +41,9 @@ import legado from './legacy.json';
 import elanfx from './elanfx.json';
 const SKS = habs as { id: string; nome: string; g: string; a: string }[];
 
-const ICONS: Record<string, string> = { 'chevron-left': ic_chevron_left, 'chevron-right': ic_chevron_right, 'scroll-text': ic_scroll_text, 'dumbbell': ic_dumbbell, 'users': ic_users, 'swords': ic_swords, 'flame': ic_flame, 'sparkles': ic_sparkles, 'route': ic_route, 'brain': ic_brain, 'badge-plus': ic_badge_plus, 'backpack': ic_backpack, 'graduation-cap': ic_graduation_cap, 'moon-star': ic_moon_star, 'user': ic_user, 'sun': ic_sun, 'moon': ic_moon, 'printer': ic_printer, 'download': ic_download, 'upload': ic_upload, 'rotate-ccw': ic_rotate_ccw, 'coins': ic_coins, 'shield': ic_shield, 'scale': ic_scale, 'package-open': ic_package_open };
+const ICONS: Record<string, string> = { ghost: ic_ghost, 'chevron-left': ic_chevron_left, 'chevron-right': ic_chevron_right, 'scroll-text': ic_scroll_text, 'dumbbell': ic_dumbbell, 'users': ic_users, 'swords': ic_swords, 'flame': ic_flame, 'sparkles': ic_sparkles, 'route': ic_route, 'brain': ic_brain, 'badge-plus': ic_badge_plus, 'backpack': ic_backpack, 'graduation-cap': ic_graduation_cap, 'moon-star': ic_moon_star, 'user': ic_user, 'sun': ic_sun, 'moon': ic_moon, 'printer': ic_printer, 'download': ic_download, 'upload': ic_upload, 'rotate-ccw': ic_rotate_ccw, 'coins': ic_coins, 'shield': ic_shield, 'scale': ic_scale, 'package-open': ic_package_open };
 const ico = (n: string, cls = 'h-4 w-4') => (ICONS[n] ?? '').replace(/<!--[\s\S]*?-->/, '').replace(/class="[^"]*"/, `class="${cls}" aria-hidden="true"`);
-const TAB_ICON: Record<string, string> = { sheet: 'scroll-text', atr: 'dumbbell', raca: 'users', cmb: 'swords', ki: 'flame', mag: 'sparkles', via: 'route', sob: 'brain', vant: 'badge-plus', eq: 'backpack', sec: 'graduation-cap', elan: 'moon-star' };
+const TAB_ICON: Record<string, string> = { inv: 'ghost', sheet: 'scroll-text', atr: 'dumbbell', raca: 'users', cmb: 'swords', ki: 'flame', mag: 'sparkles', via: 'route', sob: 'brain', vant: 'badge-plus', eq: 'backpack', sec: 'graduation-cap', elan: 'moon-star' };
 const BONUS = [0, -30, -20, -10, -5, 0, 5, 5, 10, 10, 15, 20, 20, 25, 25, 30, 35, 35, 40, 40, 45];
 const bonus = (v: number) => BONUS[Math.min(20, Math.max(1, v))];
 const ATTRS: [string, string][] = [['agi', 'Agility'], ['con', 'Constitution'], ['des', 'Dexterity'], ['for', 'Strength'], ['int', 'Intelligence'], ['per', 'Perception'], ['pod', 'Power'], ['von', 'Willpower']];
@@ -61,11 +62,13 @@ const DEUSES: Record<string, string[]> = { Beryl: ['Azrael', 'Barakiel', 'Edamie
 const KIA = ATTRS.filter(([k]) => ['agi', 'con', 'des', 'for', 'pod', 'von'].includes(k));
 const kiBase = (v: number) => (v <= 10 ? v : 10 + 2 * (v - 10));
 const acuBase = (v: number) => (v <= 9 ? 1 : v <= 12 ? 2 : v <= 15 ? 3 : 4);
-const TABS: [string, string][] = [['sheet', 'Sheet'], ['atr', 'Attributes'], ['raca', 'Race'], ['cmb', 'Combat'], ['ki', 'Ki'], ['mag', 'Magic'], ['via', 'Paths'], ['sob', 'Psychic'], ['vant', 'Advantages'], ['eq', 'Equipment'], ['sec', 'Secondary'], ['elan', 'Elan']];
+const TABS: [string, string][] = [['sheet', 'Sheet'], ['atr', 'Attributes'], ['raca', 'Race'], ['cmb', 'Combat'], ['ki', 'Ki'], ['mag', 'Magic'], ['via', 'Paths'], ['sob', 'Psychic'], ['inv', 'Invocations'], ['vant', 'Advantages'], ['eq', 'Equipment'], ['sec', 'Secondary'], ['elan', 'Elan']];
 
+interface Efeito { nome: string; dif: string; custo: string; atk: string; def: string; acao: string; efeito: string; dur: string; desc: string }
+interface Invoc { nome: string; resumo: string; pacto: string; aparencia: string; difInicial: string; custoInicial: string; efeitos: Efeito[] }
 interface Vent { id: string; c: number; o?: string }
-interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[]; avatar: string; pcExtra: number; donOpt: Record<string, string>; natAb: string[][]; novel: string[][] }
-const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [], avatar: '', pcExtra: 0, donOpt: {}, natAb: [], novel: [] });
+interface State { nome: string; nivel: number; classe: string; at: Record<string, number>; pts: Record<string, number>; vida: number; elan: Record<string, number>; vent: Vent[]; nat: Record<string, number>; raca: string; sexo: string; dons: string[]; vias: { id: string; n: number }[]; livres: Record<string, string>; ouro: number[]; eq: { t: string; id: string; w?: boolean }[]; custom: { nome: string; tipo: string; bonus: number; desc: string }[]; invoc: Invoc[]; avatar: string; pcExtra: number; donOpt: Record<string, string>; natAb: string[][]; novel: string[][] }
+const novo = (): State => ({ nome: '', nivel: 1, classe: 'guerrero', at: Object.fromEntries(ATTRS.map(([k]) => [k, 5])), pts: {}, vida: 0, elan: {}, vent: [], nat: {}, raca: 'RAZA_HUMANO', sexo: 'h', dons: [], vias: [], livres: {}, ouro: [0, 0, 0], eq: [], custom: [], invoc: [], avatar: '', pcExtra: 0, donOpt: {}, natAb: [], novel: [] });
 const KEY = 'anima-forge';
 let s: State = { ...novo(), ...JSON.parse(localStorage.getItem(KEY) || '{}') };
 let tab = 'sheet', lastTab = '', vsub = 'v', busca = '', esub = 'a';
@@ -187,6 +190,26 @@ const infoEq = (t: string, i: Item) => (t === 'a' ? `damage ${i.dm}${i.b || fxDa
 const esc = (x: string) => x.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const TIPOS_MAG = ['Weapon', 'Armor', 'Shield', 'Staff', 'Wand', 'Ring', 'Amulet', 'Cloak', 'Boots', 'Gloves', 'Helm', 'Belt', 'Orb', 'Tome', 'Other'];
 const FIELD = 'rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500';
+const novoEf = (): Efeito => ({ nome: '', dif: '', custo: '', atk: '', def: '', acao: 'Active', efeito: '', dur: '', desc: '' });
+const iField = (i: number, k: string, label: string, v: string, o: { j?: number; area?: boolean; ph?: string; cls?: string; list?: string } = {}) => {
+  const at = `data-f="inv" data-i="${i}" ${o.j !== undefined ? `data-j="${o.j}"` : ''} data-k="${k}" aria-label="${label}"`;
+  const ctrl = o.area ? `<textarea ${at} rows="3" placeholder="${o.ph ?? ''}" class="${FIELD} w-full">${esc(v)}</textarea>` : `<input ${at} ${o.list ? `list="${o.list}"` : ''} value="${esc(v)}" placeholder="${o.ph ?? ''}" class="${FIELD} w-full">`;
+  return `<label class="block ${o.cls ?? ''}"><span class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">${label}</span>${ctrl}</label>`;
+};
+const invUI = () => `<datalist id="acoes-inv"><option value="Active"><option value="Passive"><option value="Free"></datalist>
+  <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-sm text-slate-400">Register the invocations your character can summon. Add one or more effects to each, with their own difficulty, cost and action.</p><button data-act="iadd" class="rounded bg-amber-500 px-4 py-2 text-slate-950">New invocation</button></div>` +
+  (s.invoc.length ? s.invoc.map((v, i) => {
+    const key = `inv:${i}`;
+    const efs = v.efeitos.map((e, j) => `<div class="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+      <div class="mb-2 flex items-center justify-between gap-2"><span class="text-sm font-semibold text-amber-300">Effect ${j + 1}${e.nome ? ': ' + esc(e.nome) : ''}</span><button data-act="ifxdel" data-k="${i}:${j}" class="text-xs text-slate-500 underline hover:text-red-400">Remove effect</button></div>
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-6">${iField(i, 'nome', 'Effect name', e.nome, { j, cls: 'col-span-2 sm:col-span-6' })}${iField(i, 'dif', 'Difficulty', e.dif, { j, ph: '150', cls: 'sm:col-span-1' })}${iField(i, 'custo', 'Cost', e.custo, { j, ph: '200', cls: 'sm:col-span-1' })}${iField(i, 'atk', 'Atk. ability', e.atk, { j, ph: 'N/A', cls: 'sm:col-span-1' })}${iField(i, 'def', 'Def. ability', e.def, { j, ph: 'N/A', cls: 'sm:col-span-1' })}${iField(i, 'acao', 'Action', e.acao, { j, list: 'acoes-inv', cls: 'col-span-2 sm:col-span-2' })}</div>
+      <div class="mt-2 space-y-2">${iField(i, 'efeito', 'Effect', e.efeito, { j, area: true })}${iField(i, 'dur', 'Duration', e.dur, { j })}${iField(i, 'desc', 'Description of the effect', e.desc, { j, area: true })}</div></div>`).join('<div class="h-2"></div>');
+    return `<details data-g="${key}" class="rounded-xl border border-slate-800 bg-slate-900/60 px-4 shadow-lg shadow-black/20" ${open.has(key) ? 'open' : ''}><summary class="flex cursor-pointer items-center justify-between gap-2 py-3"><span class="font-serif text-lg font-bold text-amber-400">${esc(v.nome) || 'Unnamed invocation'}</span><span class="text-xs text-slate-500">${v.efeitos.length} effect${v.efeitos.length === 1 ? '' : 's'}</span></summary>
+      <div class="space-y-2 pb-4">${iField(i, 'nome', 'Name', v.nome)}${iField(i, 'resumo', 'Description', v.resumo, { area: true })}${iField(i, 'pacto', 'Pact', v.pacto, { area: true })}${iField(i, 'aparencia', 'Usual appearance', v.aparencia, { area: true })}
+        <div class="grid grid-cols-2 gap-2">${iField(i, 'difInicial', 'Initial invocation difficulty', v.difInicial, { ph: 'optional' })}${iField(i, 'custoInicial', 'Initial cost', v.custoInicial, { ph: 'optional' })}</div>
+        <h3 class="pt-2 text-sm font-bold uppercase tracking-wider text-amber-400">Effects</h3>${efs || '<p class="text-sm text-slate-500">No effects yet.</p>'}
+        <div class="flex items-center justify-between pt-2"><button data-act="ifxadd" data-k="${i}" class="rounded bg-slate-800 px-3 py-1.5 text-sm text-amber-300 hover:bg-amber-500 hover:text-slate-950">Add effect</button><button data-act="idel" data-k="${i}" class="text-xs text-slate-500 underline hover:text-red-400">Delete invocation</button></div></div></details>`;
+  }).join('<div class="h-3"></div>') : '<p class="text-sm text-slate-500">No invocations yet.</p>');
 const customUI = () => `<datalist id="tipos-mag">${TIPOS_MAG.map(x => `<option value="${x}">`).join('')}</datalist>
   <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-sm text-slate-400">Create your own magic items: name, type, quality bonus and a description of their abilities.</p><button data-act="cadd" class="rounded bg-amber-500 px-4 py-2 text-slate-950">New item</button></div>` +
   (s.custom.length ? s.custom.map((c, i) => `<section class="rounded-xl border border-slate-800 bg-slate-900/60 p-4 shadow-lg shadow-black/20">
@@ -272,6 +295,7 @@ function folha(): string {
     card('Secondary abilities', hab.length ? hab.map(h => row(h.nome, `<span class="font-mono text-amber-300">${skFinal(h)}</span>`)).join('') : vazio('No secondary abilities trained yet.'), 'graduation-cap') +
     card('Advantages and disadvantages', chips(s.vent.map(x => vById(x.id).nome + optLabel(x.o))), 'badge-plus') +
     card('Magic paths and Elan', chips([...s.vias.map(v => `${viaOf(v.id).nome} ${v.n}`), ...elanLista.map(e => `${e.g.nome} ${e.sync}${s.dons.some(d => e.g.dons.some(x => x.id === d)) ? ' · gifts' : ''}`)]), 'sparkles') +
+    card('Invocations', s.invoc.length ? s.invoc.map(v => `<div class="border-b border-slate-800/60 py-1.5 last:border-0"><div class="font-medium">${esc(v.nome) || 'Unnamed invocation'}</div><div class="text-xs text-slate-500">${v.efeitos.map(e => `${esc(e.nome) || 'Effect'}${e.dif || e.custo ? ` (Diff ${esc(e.dif) || '-'} / Cost ${esc(e.custo) || '-'})` : ''}`).join(' · ') || 'No effects'}</div></div>`).join('') : vazio('No invocations yet.'), 'ghost') +
     card('Equipment', `${chips(mon.map(m => m.it.n + (m.x.t === 'r' && m.x.w ? ' (worn)' : '')))}<p class="mt-2 text-sm text-slate-400">Balance: ${fmt(saldo())}</p>`, 'backpack') +
     card('Magic items', s.custom.length ? s.custom.map(c => row(esc(c.nome) || 'Unnamed item', `<span class="font-mono text-amber-300">${c.bonus ? '+' + c.bonus : '0'}</span>`, `${esc(c.tipo)}${c.desc ? ' · ' + esc(c.desc).slice(0, 90) : ''}`)).join('') : vazio('No magic items yet.'), 'sparkles');
 }
@@ -331,6 +355,7 @@ function painel(): string {
       card('Your items', (dono || vazio('Nothing bought yet.')) + (mon.length || TIPOS.some((_, k) => natTA(k)) ? `<p class="mt-2 text-sm text-slate-400">Total weight: ${Math.round(kg * 10) / 10} kg${vest.length || TIPOS.some((_, k) => natTA(k)) ? `. Worn protection: ${TIPOS.map((n, k) => `${n} ${ta[k]}`).join(', ')}. Natural penalty ${vest.reduce((a, v) => a + v.pn, 0)}, movement restriction ${vest.reduce((a, v) => a + v.rm, 0)}.` : ''}</p>` : '')) +
       `<div class="flex gap-2">${sub.map(([k, n]) => `<button data-act="esub" data-k="${k}" class="rounded-full px-4 py-1.5 text-sm ${esub === k ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 hover:bg-slate-800'}">${n}</button>`).join('')}${esub === 'c' ? '' : `<input data-q value="${busca}" placeholder="Search..." class="min-w-0 flex-1 rounded bg-slate-900 px-3 py-1.5 text-sm outline-none ring-1 ring-slate-700 focus:ring-amber-500">`}</div>${esub === 'c' ? `<div class="space-y-4">${customUI()}</div>` : `<div class="space-y-2">${lista}</div>`}`;
   }
+  if (tab === 'inv') return `<div class="space-y-4">${invUI()}</div>`;
   if (tab === 'vant') {
     const dis = vsub === 'd', P = pcs(s.vent), q = busca.toLowerCase();
     const sel = s.vent.map((x, i) => ({ x, i, v: vById(x.id) })).map(({ x, i, v }) => row(v.nome + (x.o ? ` (${ATTRS.find(a => a[0] === x.o)?.[1] ?? SKN[x.o] ?? CATN[x.o]})` : ''), `<div class="flex items-center gap-3"><span class="font-mono ${v.dis ? 'text-emerald-400' : 'text-amber-300'}">${v.dis ? '+' + -x.c : '-' + x.c} CP</span><button data-act="vdel" data-k="${i}" class="${BT}">×</button></div>`, v.gn)).join('');
@@ -507,6 +532,10 @@ app.addEventListener('click', e => {
     s.vias[i].n = nv; limpaLivres(k);
   }
   else if (act === 'esub') esub = k;
+  else if (act === 'iadd') s.invoc.push({ nome: '', resumo: '', pacto: '', aparencia: '', difInicial: '', custoInicial: '', efeitos: [novoEf()] }), open.add('inv:' + (s.invoc.length - 1));
+  else if (act === 'idel') { if (!confirm('Delete this invocation and all its effects?')) return; s.invoc.splice(Number(k), 1); }
+  else if (act === 'ifxadd') s.invoc[Number(k)]?.efeitos.push(novoEf());
+  else if (act === 'ifxdel') { const [a, b] = k.split(':').map(Number); s.invoc[a]?.efeitos.splice(b, 1); }
   else if (act === 'cadd') s.custom.push({ nome: '', tipo: 'Weapon', bonus: 0, desc: '' });
   else if (act === 'cdel') { if (!confirm('Delete this magic item?')) return; s.custom.splice(Number(k), 1); }
   else if (act === 'eadd') { const [tp, id] = k.split(':'); s.eq.push({ t: tp, id }); }
@@ -557,6 +586,11 @@ app.addEventListener('change', e => {
     s.elan[k] = clamp(Math.floor(Number(t.value)) || 0, elSpent(g), 100);
   }
   else if (t.dataset.f === 'donopt') { if (t.value) s.donOpt[t.dataset.k!] = t.value; else delete s.donOpt[t.dataset.k!]; }
+  else if (t.dataset.f === 'inv') {
+    const inv = s.invoc[Number(t.dataset.i)], k = t.dataset.k!;
+    if (inv) { const alvo = (t.dataset.j !== undefined ? inv.efeitos[Number(t.dataset.j)] : inv) as unknown as Record<string, string> | undefined; if (alvo) alvo[k] = t.value; save(); }
+    return;
+  }
   else if (t.dataset.f === 'cust') {
     const c = s.custom[Number(t.dataset.i)], k = t.dataset.k as 'nome' | 'tipo' | 'bonus' | 'desc';
     if (c) { if (k === 'bonus') c.bonus = Number(t.value); else c[k] = t.value; save(); }
